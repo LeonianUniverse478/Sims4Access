@@ -12,8 +12,3 @@ Options.ini.a11ybackup
 # The game's own data, which must never be redistributed
 *.package
 Data/
-
-# Built from the game's own packages, so not ours to redistribute.
-# tools/rebuild_tables.py regenerates both from a local install.
-install/*.bin
-install/*.ts4script
