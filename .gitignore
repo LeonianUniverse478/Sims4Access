@@ -1,0 +1,19 @@
+# Build output. package.py rebuilds all of it from src/.
+*.pyc
+__pycache__/
+build/
+*.ts4script.disabled
+
+# Local scratch
+*.log
+a11yscan_log.txt
+Options.ini.a11ybackup
+
+# The game's own data, which must never be redistributed
+*.package
+Data/
+
+# Built from the game's own packages, so not ours to redistribute.
+# tools/rebuild_tables.py regenerates both from a local install.
+install/*.bin
+install/*.ts4script
