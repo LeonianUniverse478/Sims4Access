@@ -26,7 +26,9 @@ Put these four files in `Documents/Electronic Arts/The Sims 4/Mods/`:
 Script mods must be enabled. The `.bin` files are also inside the `.ts4script`;
 the loose copies are a fallback.
 
-Speech goes through [Prism](https://github.com/ethindp/prism), which speaks
+Speech goes through [Prism](https://github.com/ethindp/prism) by Ethin
+Probst, MPL-2.0, which is not part of this project — see
+`install/PRISM-NOTICE.md`. It speaks
 through whichever screen reader you already run — NVDA, JAWS, SAPI, OneCore or
 UIA on Windows, VoiceOver on macOS, Orca or speech-dispatcher on Linux — at
 your own voice and rate. `prism.dll` here is built from source, since Prism
