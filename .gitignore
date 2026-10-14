@@ -1,14 +1,4 @@
-# Build output. package.py rebuilds all of it from src/.
-*.pyc
-__pycache__/
-build/
-*.ts4script.disabled
-
-# Local scratch
+# Local scratch and build output; builds are published as release assets.
 *.log
-a11yscan_log.txt
-Options.ini.a11ybackup
-
-# The game's own data, which must never be redistributed
-*.package
-Data/
+build/
+*.zip
