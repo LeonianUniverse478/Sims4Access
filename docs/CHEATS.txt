@@ -1,0 +1,49 @@
+TS4 ACCESS: OPTIONAL CONSOLE COMMANDS
+
+You do not need these commands for normal play. Use Ctrl+Alt+H for the
+accessibility menu and CONTROLS.txt for keyboard controls.
+
+Press Ctrl+Shift+C to open the game's console. Type a command and press
+Enter. Close the console with Ctrl+Shift+C before navigating menus.
+
+HELP AND SETTINGS
+
+a11y.hub: Open the accessibility menu.
+a11y.menu window: Open settings, including Simplified menus and Build controls.
+a11y.settings: Read current settings.
+a11y.reload: Apply changes you made to TS4_Access.cfg.
+
+a11y.scannermode on: Enable ordinary arrow-key scanner browsing.
+a11y.scannermode off: Turn Scanner mode off.
+a11y.keys on: Enable keyboard navigation of menus and panels.
+a11y.simactions on: Announce the active Sim's actions.
+a11y.objectnames on: Read world-object tooltips.
+a11y.captions on: Show spoken text on screen.
+Use off instead of on to disable these options.
+
+SPEECH
+
+a11y.speechmode hover: Read controls under the pointer automatically.
+a11y.speechmode manual: Read only when you use the read shortcut.
+a11y.tooltipdelay 1.5: Wait 1.5 seconds before longer descriptions.
+a11y.braille concise: Speak full text and braille the short label.
+
+If you use the fallback Windows voice:
+a11y.voice rate 3: Set voice speed, from -10 to 10.
+a11y.voice volume 70: Set volume, from 0 to 100.
+a11y.voice name zira: Choose the Windows voice.
+a11y.voice list: List available voices.
+
+NVDA and JAWS use their own voice settings.
+
+QUICK ACCESS
+
+a11y.phonelist: Open the phone action list.
+a11y.phone: Open a waiting call or text.
+a11y.household: Choose an active Sim from your household.
+a11y.contacts: Open known contacts.
+a11y.funds: Read household funds.
+a11y.scan rescan: Refresh the scanner.
+
+Settings commands save your preferences. Updating the mod preserves your
+settings file; the release ZIP does not replace it.
