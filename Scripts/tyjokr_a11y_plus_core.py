@@ -439,7 +439,8 @@ def choose(title, text, rows, on_pick, tag="main", multi=0, min_pick=1, on_cance
         _cancel_previous(tag)
         dialog = UiObjectPicker.TunableFactory().default(
             owner,
-            title=lambda *a, **k: raw(title),
+            # A LocalizedString title (a catalog label) is passed through as rows are.
+            title=lambda *a, **k: raw(title) if isinstance(title, str) else title,
             text=lambda *a, **k: raw(text),
             picker_type=UiObjectPicker.UiObjectPickerObjectPickerType.OBJECT,
             min_selectable=min_pick if multi else 1,
@@ -484,7 +485,7 @@ def choose(title, text, rows, on_pick, tag="main", multi=0, min_pick=1, on_cance
         dialog.show_dialog()
         return True
     except Exception:
-        log_exc("choose " + title)
+        log_exc("choose " + str(title))
         speak("Could not open the list.")
         return False
 

@@ -3777,6 +3777,7 @@ package olympus.core
             if(cmd == "ping") { this.A11yPlusReply("pong"); }
             else if(cmd == "catalog" && parts.length >= 6) { this.A11yPlusCatalog(int(parts[3]),String(parts[4]),String(parts[5])); }
             else if(cmd == "select" && parts.length >= 4) { this.A11yPlusSelect(int(parts[3])); }
+            else if(cmd == "browse" && parts.length >= 8) { this.A11yCatalogBrowse(int(parts[3]),String(parts[4]),String(parts[5]),String(parts[6]),decodeURIComponent(String(parts[7]))); }
          }
          catch(e:Error) { this.A11yPlusReply("error|" + e.message); }
       }
@@ -3852,6 +3853,82 @@ package olympus.core
          product = this.mA11yPlusProducts[index];
          product["Select"](null,null,0,2,int(product["stateIndex"]));
          this.A11yPlusReply("selected|" + index + "|" + encodeURIComponent(String(product["Name"])));
+      }
+
+      // Catalog tree (tyjokr_a11y_catalog.py): one Buy panel button's filter, or
+      // a search. Tag names resolve as FilterButton.CategoryTags does: a
+      // FilterCategories group (Array) expands with TuningTagsUtils.GetGroup, a
+      // single hash with GetTagValueFromHash. A search is the Buy panel's open
+      // search (BuildBuyNavigationMain.OnSearch): searchResult.devString, sorted
+      // by SEARCHGROUP_OPENSEARCH_SORT. Replies and selection are A11yPlusCatalog's.
+      public function A11yCatalogTags(names:String) : Array
+      {
+         var categories:Object = getDefinitionByName("gamedata.BuildBuy.constants.FilterCategories");
+         var tagUtils:Object = getDefinitionByName("olympus.utils.TuningTagsUtils");
+         var list:Array = names.split(",");
+         var tags:Array = new Array();
+         var value:Object = null;
+         var group:Array = null;
+         var index:int = 0;
+         var inner:int = 0;
+         while(index < list.length)
+         {
+            value = list[index] != "" ? categories[list[index]] : null;
+            if(value != null && value is Array)
+            {
+               group = tagUtils["GetGroup"](value) as Array;
+               inner = 0;
+               while(group != null && inner < group.length) { tags.push(group[inner]); inner = inner + 1; }
+            }
+            else if(value != null)
+            {
+               value = tagUtils["GetTagValueFromHash"](value);
+               if(value != null) { tags.push(value); }
+            }
+            index = index + 1;
+         }
+         return tags;
+      }
+
+      public function A11yCatalogBrowse(productType:int, tagNames:String, priorityNames:String, serial:String, search:String) : void
+      {
+         var filterClass:Class = getDefinitionByName("gamedata.BuildBuy.shared.ProductFilter") as Class;
+         var productClass:Class = getDefinitionByName("gamedata.BuildBuy.shared.CatalogProduct") as Class;
+         var filter:Object = new filterClass();
+         var resultClass:Class = null;
+         var raw:Array = null;
+         var items:Array = new Array();
+         var product:Object = null;
+         var index:int = 0;
+         var start:int = 0;
+         filter["productType"] = productType;
+         if(search != "")
+         {
+            resultClass = getDefinitionByName("gamedata.BuildBuy.shared.SearchResult") as Class;
+            filter["searchResult"] = new resultClass();
+            filter["searchResult"]["devString"] = search;
+            filter["categoryPriorityTags"] = this.A11yCatalogTags("SEARCHGROUP_OPENSEARCH_SORT");
+         }
+         else
+         {
+            filter["categoryTags"] = this.A11yCatalogTags(tagNames);
+            filter["categoryPriorityTags"] = this.A11yCatalogTags(priorityNames);
+         }
+         raw = CommunicationManager.CallGameService("BBRequestProductCatalog",filter["ToObject"]()) as Array;
+         this.mA11yPlusProducts = new Array();
+         while(raw != null && index < raw.length)
+         {
+            product = new productClass(raw[index]);
+            this.mA11yPlusProducts.push(product);
+            items.push(encodeURIComponent(String(product["Name"])) + "~" + String(product["price"]) + "~" + String(product["variationCount"]));
+            index = index + 1;
+         }
+         while(start < items.length)
+         {
+            this.A11yPlusReply("cat|" + serial + "|" + start + "|" + items.length + "|" + items.slice(start,start + 25).join("^"));
+            start = start + 25;
+         }
+         this.A11yPlusReply("catend|" + serial + "|" + items.length);
       }
 
       public function A11yHandleEncoded(param1:String) : void

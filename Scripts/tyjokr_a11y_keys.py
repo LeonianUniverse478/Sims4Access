@@ -83,6 +83,8 @@ CHORDS = {
     0x56: ('events', False),   # V: running events (end them, send guests home)
     0x4D: ('milestones', False),  # M: the active Sim's milestones (Growing Together)
     0x4B: ('values', False),      # K: the active Sim's character values (Parenthood)
+    0x4F: ('catalog', False),     # O: the Buy catalog tree (Build mode)
+    0x44: ('catalogfind', False), # D: search the Buy catalog (Build mode); not N, NVDA's own key
     0x42: ('buildplace', False),   # B: Build placement on the lot grid
     0x54: ('gridtoggle', False),   # T: read-only lot grid
     0xDB: ('rotateleft', False),   # [ : native Build rotation
@@ -98,7 +100,7 @@ CHORDS = {
 CHORD_NAMES = {0x26: 'Up', 0x28: 'Down', 0x25: 'Left', 0x27: 'Right', 0x20: 'Space',
                0x21: 'PageUp', 0x22: 'PageDown',
                0x0D: 'Enter', 0x08: 'Backspace', 0x53: 'S', 0x57: 'W',
-               0x52: 'R', 0x48: 'H', 0x43: 'C', 0x50: 'P', 0x45: 'E', 0x47: 'G', 0x51: 'Q', 0x4C: 'L', 0x56: 'V', 0x4D: 'M', 0x4B: 'K',
+               0x52: 'R', 0x48: 'H', 0x43: 'C', 0x50: 'P', 0x45: 'E', 0x47: 'G', 0x51: 'Q', 0x4C: 'L', 0x56: 'V', 0x4D: 'M', 0x4B: 'K', 0x4F: 'O', 0x44: 'D',
                0x42: 'B', 0x54: 'T', 0xDB: '[', 0xDD: ']', 0x5A: 'Z', 0x59: 'Y',
                0x46: 'F', 0x58: 'X', 0x31: '1', 0x32: '2', 0x33: '3', 0x34: '4',
                0x35: '5', 0x36: '6', 0x37: '7', 0x38: '8'}
@@ -1012,6 +1014,15 @@ def _chord(intent):
             if not pump.post(_open_simology, intent, _input_epoch):
                 speech.speak(lang.t('no lot loaded'), explicit=True)
             return
+        if intent in ('catalog', 'catalogfind'):
+            # Native pickers, like the action queue.
+            if _modal_active:
+                speech.speak(lang.t('close the dialog first'), explicit=True)
+                return
+            import tyjokr_a11y_pump as pump
+            if not pump.post(_open_catalog, intent, _input_epoch):
+                speech.speak(lang.t('no lot loaded'), explicit=True)
+            return
         if intent == 'events':
             # A native picker, like the action queue.
             if _modal_active:
@@ -1098,6 +1109,15 @@ def _open_simology(intent, epoch):
         speech.speak(lang.t('needs parenthood'), explicit=True)
         return False
     return simology.values_window()
+
+
+def _open_catalog(intent, epoch):
+    """Simulation thread; ownership re-checked as for the action queue."""
+    if epoch != _input_epoch or _editing_active or _modal_active:
+        _log_route('dropped: owner changed before the pump turn', intent)
+        return False
+    import tyjokr_a11y_catalog as catalog
+    return catalog.open_tree() if intent == 'catalog' else catalog.find()
 
 
 def _open_events(epoch):

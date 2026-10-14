@@ -229,6 +229,22 @@ On layouts with AltGr, use left Ctrl and left Alt for these shortcuts.
 If Ctrl+Alt+arrows rotates your screen, disable the competing rotation
 shortcut in your graphics software.
 
+BUILD: CATALOG TREE AND SEARCH
+
+In Build mode (F2), Ctrl+Alt+O opens the Buy catalog as a list of lists,
+so you never Tab around the catalog panels:
+- Search the catalog, By room or By function.
+- By room lists the rooms (Kitchen, Bathroom, Bedroom and the rest), then
+  what goes in each (for example Refrigerators, Counters, Sinks). By
+  function lists kinds of object (Comfort, Surfaces, Lighting and so on).
+- A kind of item lists every item with its price and how many colours it
+  comes in.
+Arrows move, Enter opens or chooses, Escape goes back one level.
+Enter on an item picks it up, as clicking it in the catalog does. Then
+press Ctrl+Alt+B and place it with the Build cursor as usual.
+Ctrl+Alt+D goes straight to search: type a word, such as bed, fridge or
+lamp, press Enter, and choose from what matches.
+
 BUILD: PLACING OBJECTS
 
 Build controls are on by default. Press F2 to enter Build mode.
@@ -237,7 +253,8 @@ Entering Build mode turns off a Live lot grid.
 This places objects from the Build catalog. It does not build walls,
 floors, roofs, rooms or stairs; see README.txt for what is not covered.
 
-1. Open the Build catalog and choose an object with Enter.
+1. Choose an object: press Ctrl+Alt+O for the catalog tree (above), or
+   open the Build catalog and choose an object with Enter.
 2. Press Ctrl+Alt+B. You hear "Build placement on", the chosen object and
    which side of the lot the street is on. The catalog stays open for the
    game; Tab returns to it and Escape comes back.

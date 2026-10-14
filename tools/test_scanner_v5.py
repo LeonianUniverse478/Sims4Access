@@ -210,7 +210,8 @@ class RegressionTests(unittest.TestCase):
              0x51,                                               # Ctrl+Alt+Q action queue (2026-09-30)
              0x4C,                                               # Ctrl+Alt+L logging on/off (2026-09-30)
              0x56,                                               # Ctrl+Alt+V events (2026-09-30)
-             0x4D, 0x4B})                                        # Ctrl+Alt+M milestones, K character values (2026-10-04)
+             0x4D, 0x4B,                                         # Ctrl+Alt+M milestones, K character values (2026-10-04)
+             0x4F, 0x44})                                        # Ctrl+Alt+O catalog tree, D catalog search (2026-10-14)
         with patch.object(menu, '_show_settings_window') as show:
             zone.Zone().on_loading_screen_animation_finished()
             show.assert_not_called()
