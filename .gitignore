@@ -1,0 +1,14 @@
+# Made locally by Dev.ps1 setup from your own installs; never commit them.
+flash/work-*/gfx/
+flash/work-compat/
+flash/uicheats-base/*.swf
+# Build output and private settings.
+build/
+dist/
+exchange/
+.handoff/
+dev.local.json
+__pycache__/
+*.pyc
+*.log
+helper/*.exe

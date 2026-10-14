@@ -1,0 +1,35 @@
+TS4 ACCESS TEST BUILD
+=====================
+
+EASIEST WAY: THE UPDATER
+
+1. Close The Sims 4.
+2. Open TS4AccessUpdater\TS4AccessUpdater.exe and press Enter.
+3. When it says the build is installed, press Enter and open the game.
+
+The updater installs the mod, the speech pack and turns on Script Mods. Keep
+it: run it again whenever there is a new build, and it fetches the newest one
+from https://github.com/LeonianUniverse478/Sims4Access/releases
+
+BY HAND (if you prefer)
+
+1. Close The Sims 4.
+2. Open your Sims 4 user folder, normally Documents\Electronic Arts\The Sims 4
+   (or OneDrive\Documents\...).
+3. Copy the TS4_Access and TS4_Access_SpeechPack folders from this zip's Mods
+   folder into that Mods folder, replacing older copies.
+4. Open TS4AccessHelper\TS4AccessHelper.exe and press Enter to turn on Script
+   Mods.
+5. Start your screen reader, then start the game.
+
+NEW: GUIDED NEW GAME
+
+Start a New Game and choose whether to do the questionnaire. A window called
+Create your Sim then offers a step-by-step guide: name, age, gender, traits,
+aspiration, optional voice and walk style, more Sims and their relationships,
+then a world and a home. Each step is a window of buttons. Escape on the first
+window skips the guide. See CONTROLS.txt in the TS4_Access folder.
+
+IF SOMETHING GOES WRONG
+
+Send TS4_Access.log from your Mods folder. It records each guide step.

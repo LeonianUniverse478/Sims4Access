@@ -1,0 +1,255 @@
+MAKE YOUR OWN FAMILY AND BUILD YOUR OWN HOUSE
+Step by step, written for you by Claude, October 6, 2026.
+TS4 Access Plus version 0.4.0.
+
+Do one part at a time. If you get stuck anywhere, alt-tab to Claude and
+say "stuck", and what you heard last. Claude reads the game's log and tells
+you what to press next.
+
+
+BEFORE YOU START: TWO GOOD THINGS TO KNOW
+
+1. Arrow keys now work in all the game's lists. JAWS was catching the arrows
+   before the game got them. Claude added a JAWS key file for The Sims 4
+   (TS4_x64.jkm), the same fix as Fallout 4. You do not need Insert+3.
+2. Your old saved game was backed up first, so nothing can be lost.
+
+How every list works (you will use this all the time):
+- Up and Down arrows move through the choices. JAWS reads each one.
+- Enter chooses.
+- Escape goes back or cancels.
+- In a typing box: just type, then press Enter.
+
+
+PART 1. START THE GAME AND LOAD YOUR SAVE
+
+The game can only make a new family from inside a game that is already
+loaded. So first you load your old save. Your old Sim (michael) just stays
+in the town. You will not play him any more unless you want to.
+
+1. Start JAWS first, then start The Sims 4 from Steam.
+2. Wait for the main menu. It can take a minute or two.
+3. If a message about mods appears, press Enter to close it.
+4. Choose Resume Game (or Load Game, then your save) and press Enter.
+5. Wait until the game has loaded. You hear Sims or need warnings.
+6. Press P to pause. You hear "Paused". Nothing happens while paused.
+
+
+PART 2. MAKE YOUR FAMILY
+
+Nothing changes in the game until the very end, when you say yes to
+moving in. You can cancel at any time.
+
+1. Press Alt+C. The list "Create and edit Sims" opens.
+2. The first choice is "Start a brand-new family". Press Enter.
+3. Choose "Start" and press Enter.
+4. Type the family's last name, for example Maslo, and press Enter.
+
+Now you make the first Sim. This one must be a grown up.
+
+5. Age: Young Adult, Adult or Elder. Young Adult is the usual choice.
+   Press Enter on one.
+6. Gender: Female or Male. Press Enter on one.
+7. Type the first name and press Enter.
+8. Traits: personality. A grown-up Sim gets 3.
+   Arrow down through the list. Each trait says what it does.
+   Press Enter on one you like. The list comes back for the next one.
+   Traits that do not go together are left out automatically.
+   After 3 traits it goes on by itself.
+   Good easy traits for a first game: Cheerful, Active, Creative,
+   Good, Family-Oriented, Neat, Outgoing.
+9. Aspiration: a life goal. Arrow down and press Enter on one.
+   Escape skips it. Easy ones: Big Happy Family, Friend of the World,
+   Bodybuilder, Painter Extraordinaire.
+10. You hear for example "Mary Maslo, Young Adult female added."
+
+The family menu opens. It has:
+   Add another Sim
+   Done, choose a home
+   Hear the family
+   Remove the last Sim
+   Cancel the whole family
+
+To add a husband, wife, child or roommate:
+11. Choose "Add another Sim" and do steps 5 to 9 again.
+    The second Sim can be any age: also Teen, Child or Toddler.
+    Children and toddlers get 1 trait. Teens get 2.
+12. One extra question: "family tie". Arrow down to choose:
+    - "Spouse, married to ..." (husband or wife)
+    - "Child of ..." (a son or daughter)
+    - "Parent of ..."
+    - "Brother or sister of ..."
+    - "No family tie, a roommate"
+    A child of a married parent is automatically the child of both.
+13. Add more Sims the same way. A family can have up to 8.
+
+The game gives each Sim a random look. You never see it, so it does not
+matter. Sighted friends will just see a normal Sim.
+
+If you close the family menu by mistake, nothing is lost: press Alt+C and
+choose "Continue the new family".
+
+
+PART 3. CHOOSE YOUR HOME
+
+Your family gets 20,000 simoleons (the game's money), the same as a sighted
+player gets.
+
+1. In the family menu choose "Done, choose a home" and press Enter.
+2. Two choices:
+   - "Empty lots, build your own house". This is what you want.
+   - "Houses ready to live in". A finished house, if you change your mind.
+3. Press Enter on "Empty lots". You hear "Getting prices", then the list.
+4. Each lot says its name, its town and its price, for example:
+   "Comfy Cubby, Newcrest. About 1450 simoleons. 18550 simoleons left."
+   Newcrest is a town made for building, with many empty lots.
+   The cheapest lots are small. A small lot is fine for a first house and
+   leaves more money for the house itself.
+5. Press Enter on a lot.
+6. It asks "Move in?" and repeats the family, the lot and the money.
+   Choose "Yes, move in and play the ... family" and press Enter.
+7. The game loads the new lot, like any trip. This takes about a minute.
+8. You hear "Welcome home, ... family. You have ... simoleons. The lot is
+   empty. It is ... by ... meters."
+9. Press P to pause. Press Escape, choose Save, press Enter.
+   Save right away, so your new family is kept.
+
+Your family is now standing on an empty lot. Sims can wait outside for a
+while, but they need a toilet, a bed and a fridge soon. Build next.
+
+
+PART 4. BUILD YOUR HOUSE
+
+Keep the game paused (P) while you build. You will hear "Paused".
+
+GETTING INTO BUILD MODE
+Your computer is a laptop. The F keys at the top need the Fn key held
+down (bottom left, next to Ctrl). So:
+  Fn+F2 = Build mode.   Fn+F1 = back to Live mode (normal play).
+If Fn+F2 does nothing, tell Claude.
+
+In Build mode press Alt+B. The build helper opens. Its first choices are:
+  Build my house
+  Door between two rooms
+  Remove a door or window
+  Furnish a room with the basics
+  Name a room
+  ...and the older tools (Catalog, Build a room, and so on).
+
+THE EASY WAY: BUILD MY HOUSE (about 5 minutes)
+1. Fn+F2, then Alt+B, then "Build my house", Enter.
+2. Choose "Living room, kitchen, bathroom and 2 bedrooms", Enter.
+   (Or "Choose the rooms yourself" to add rooms one at a time.)
+3. You hear the plan. For your lot it is:
+   - The house faces the street, with 2 meters of front yard.
+   - At the front: the living room (7 by 5 meters) and the kitchen
+     (4 by 5).
+   - Behind them a hallway (2 meters wide) across the whole house.
+   - At the back: bedroom 1, the bathroom, bedroom 2 (4 by 4 each,
+     the bathroom 3 by 4).
+   - Doors: ONE front door from the street into the living room. A door
+     from the living room to the kitchen, from the living room to the
+     hallway, and from the hallway into each bedroom and the bathroom.
+     No room has a door to the outside except the living room.
+   - The price: about 5,300 simoleons.
+4. Choose "Build it" and press Enter. Then do not press any keys.
+   You hear each room and door as it is built. At the end you hear
+   "Your house is finished", the price, and the money left.
+5. The rooms now have names: Living room, Kitchen, Hallway, Bedroom 1,
+   Bathroom, Bedroom 2. Alt+R says them in Live mode.
+
+A HOUSE WITH TWO FLOORS (when the lot is too small)
+If you hear "does not fit on this lot", choose a two-floor house in
+Build my house: "Two floors, 3 bedrooms" (or 4 bedrooms, or 2).
+It is 10 by 11 meters and needs about 10,000 simoleons.
+   - Downstairs at the front: living room (6 by 5) and kitchen (4 by 5).
+   - A hallway across the house with the STAIRS in it. You step onto the
+     stairs at the left end (seen from the street) and come out
+     upstairs at the right end.
+   - Downstairs at the back: dining room (7 by 4) and bathroom (3 by 4).
+   - Upstairs at the front: bedroom 1 and bedroom 2 (5 by 5 each).
+   - Upstairs hallway, then bedroom 3 (7 by 4) and the upstairs bathroom.
+   - Every room has a door to its hallway.
+The mod changes floors by itself. Afterwards the game shows the ground
+floor again. Page Up and Page Down change floors yourself.
+"Put a roof on my house" puts the roof on top of the second floor.
+
+FURNISH EACH ROOM (about 1 minute per room)
+6. Alt+B, "Furnish a room with the basics", Enter.
+7. Choose a room, for example Kitchen.
+8. Say what kind of room it is. The likely kind is first in the list.
+   Each kind says what it buys and the price:
+   - Bedroom for a couple: double bed and a lamp. About 785.
+   - Toddler's bedroom: toddler bed and a lamp. About 210.
+     (Use this for Shay.)
+   - Bathroom: toilet, shower, sink and a lamp. About 830.
+   - Kitchen: fridge, stove, 2 counters, trash can, lamp. About 1,185.
+   - Living room: sofa, television and a lamp. About 795.
+   - Hallway or other room: a lamp. About 60.
+9. Press Enter. You hear "Done furnishing", what was bought and the price.
+10. Do the same for every room.
+11. The roof: Alt+B, "Put a roof on my house", Enter. Choose "Gabled Roof"
+    and press Enter. Do not press keys for about 40 seconds. You hear
+    "The roof is on". Roofs cost nothing.
+The whole house with furniture costs about 9,100 simoleons. You will have
+about 8,900 left. Sims cook at the counters, so keep both.
+
+DO IT YOURSELF: YOUR OWN DOORS
+- A door between two rooms: Alt+B, "Door between two rooms". Choose the
+  first room. Then choose the other room (it says how many meters of
+  wall they share), or "Outside, the ... wall" for a door to the yard.
+  The one facing the street says "facing the street". The door goes in
+  the middle of the shared wall.
+  If you chose a door yourself in Alt+B, Catalog, Doors, that door is
+  used. Otherwise a simple door for 90 simoleons.
+- Remove a door: Alt+B, "Remove a door or window". Each one says where
+  it is, for example "Door between the Hallway and the Bathroom", or
+  "Door from the Kitchen to outside, east wall". Press Enter on it. You
+  get the money back.
+- Name a room: Alt+B, "Name a room", for example "Shay's room".
+- Your own rooms one at a time: Alt+B, "Build a room" (as before).
+- Draw like a sighted player: Alt+B, "Draw with a cursor, like sighted
+  players". Alt+arrows move a cursor around the lot, 1 meter at a time
+  (hold Shift too for 5 meters). Up is north, toward the street. You hear
+  where it is and which rooms or walls are there. Alt+S marks the start
+  corner, Alt+D draws from there to the cursor, Alt+X says where you are,
+  Alt+Z takes back the last thing. Alt+B, "Choose the drawing tool":
+  Wall (a straight line), Room or Roof (start and cursor are opposite
+  corners). Alt+B, "Turn the drawing cursor off" when you are done.
+
+MISTAKES
+Alt+B, "Undo the last build step" takes back the last step, with a
+refund. Press it again to go further back.
+
+WHEN YOU ARE DONE
+- Fn+F1 for Live mode. Alt+R lists your rooms.
+- Save: Escape, Save, Enter.
+
+Check your money often with Alt+T. Keep at least 1,000 simoleons for food
+and the first bills.
+
+Not done yet: ceiling lights (you get floor lamps instead), stairs and
+second floors, and fences.
+
+
+PART 5. YOUR FIRST DAY IN THE NEW HOUSE
+
+The guide HOW_TO_PLAY_THE_SIMS_4.txt has everything about playing.
+The short version:
+- Alt+N needs, lowest first. Fix the lowest one.
+- Alt+R rooms, choose a room, choose an object, choose an action.
+  For example: Kitchen, the fridge, Quick Meal.
+- To switch between your Sims: Ctrl+Alt+1, Ctrl+Alt+2 and so on.
+- Find a job with the phone: Ctrl+Alt+P.
+- P pauses. 1, 2, 3 are the speeds.
+- Save often.
+
+
+IF SOMETHING GOES WRONG
+
+- Arrows do nothing in a list: alt-tab out of the game and back in.
+  That makes JAWS load the Sims key file. If it still does not work,
+  restart JAWS once, then go back to the game.
+- You hear "Load a game first": load your save first (Part 1).
+- Anything else: alt-tab to Claude and say "stuck". Claude reads
+  Documents\Electronic Arts\The Sims 4\Mods\TS4_Access_Plus.log

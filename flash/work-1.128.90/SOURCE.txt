@@ -1,0 +1,3 @@
+EA UI originals for game 1.128.90.1030, used by the reviewed 25-movie baseline.
+Private development inputs. Source is the game Data/Client/UI.package.
+See reference/toolchain.json for exact hashes.

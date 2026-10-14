@@ -1,0 +1,13 @@
+{
+  "live_verified": false,
+  "packages": {
+    "tyjokr_ScreenReader_UI.package": {
+      "movies": 25,
+      "sha256": "aa12430a588ffd6b44e2c572402159a37d9c21f247a6d834ae24802566a8312d"
+    },
+    "tyjokr_ScreenReader_Compatibility_UICheats.package": {
+      "movies": 6,
+      "sha256": "58096e5eb3da3b472bdee0e547214f63d2d206b23cf4a59a682b782fe9745472"
+    }
+  }
+}

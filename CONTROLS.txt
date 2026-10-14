@@ -1,0 +1,307 @@
+TS4 ACCESS CONTROLS
+
+Each line gives a shortcut and its action. Start with Scanner and Menus.
+Build controls are on by default; you can turn them off in settings.
+
+SCANNER
+
+Turn Scanner mode on in settings or press Ctrl+Alt+Space.
+Keyboard navigation and the scanner feature must also be enabled.
+Wait for "Scanner". Use these keys without holding Ctrl or Alt:
+
+Up: Previous item in the current list.
+Down: Next item in the current list.
+Right: Enter a category or subcategory. On an item, repeat it.
+Left or Backspace: Go back one level.
+Enter: Enter a category or open a Sim or object's interactions.
+Space: Repeat speech.
+Escape: Normal game/menu behavior; it does not turn Scanner mode off.
+
+Hold Up or Down to repeat. Right does not repeatedly enter groups.
+Your place is remembered when you return to a group.
+In Live mode, the camera follows the active Sim and arrows do not pan it.
+At the hospital (Get to Work doctor career), patients are named with their
+visit stage, for example: Mateo Lewis, patient, waiting.
+
+Extra scanner shortcuts:
+Ctrl+Alt+Space: Turn Scanner mode on or off.
+Ctrl+Alt+S: Refresh the scanner.
+Ctrl+Alt+W: Read your location.
+
+MENUS AND DIALOGS
+
+These controls take over when a menu opens. The scanner resumes afterward.
+
+Simplified menus is on by default. Up and Down move through options one
+at a time, including lists arranged in several columns. CAS and Stories
+keep their existing controls. Turn Simplified menus off in accessibility
+settings to restore the original menu navigation.
+
+Tab: Next control. From the world, enter the HUD controls.
+Shift+Tab: Previous control while browsing a menu or HUD panel.
+In Live mode with menus closed, Shift+Tab toggles first-person view.
+Arrow keys: Navigate controls or adjust values. Hold to repeat.
+Enter: Activate or confirm, once per press.
+Space: Select or toggle.
+Escape: Close or cancel.
+Backspace: Return from a picker footer button to the item list.
+Ctrl+Alt+R: Read the current control or stop speech.
+
+In text fields, arrows edit text. Tab or Shift+Tab leaves the field.
+In purchase lists, Left and Right change quantity. Enter on an item
+focuses Done; another Enter confirms. Tab also reaches Done.
+In cooking and drink recipe lists, Enter chooses the focused recipe.
+If it opens serving sizes, press Down to a size, then Enter to cook.
+In Sim pickers, Space or Enter selects; Tab reaches confirmation.
+With Simplified menus on, Enter confirms an enabled single-choice row.
+For multiple choices, Space toggles a row and reads the selection count;
+use Done to confirm. The game keeps its minimum and maximum selections.
+In Load Game, each save is one choice; Enter uses its Play action.
+
+In the Sim's inventory panel, Enter on an item opens an item menu.
+Item actions opens the game's usual menu for that item. Sell rows show
+the price: Sell for, or for a stack Sell one, Sell all (asks first) and
+Choose how many. Choose how many opens the game's sell window: Left and
+Right set the amount, then choose Sell. Items the game will not let you
+sell say so. With the panel's multiselect on, Enter selects as usual.
+
+In Household Split and Merge, Space selects a Sim, then Enter on Transfer
+Sim(s) moves the selection to the other household. The amount field comes
+after the two Transfer Funds buttons and before Done; it reads its current
+number. Enter edits it, Ctrl+A selects the number, and Tab leaves editing.
+Choose a Transfer Funds button to apply the amount in that direction.
+Each Transfer Funds and Transfer Sim(s) button says which household it
+moves from and to, and the funds buttons and amount say both balances.
+Each Sim in the lists says which household it is in.
+Done confirms the household changes; Escape cancels the dialog.
+Businesses in the accessibility menu lists each business your household
+owns, including mod businesses such as the WickedWhims strip club: open or
+closed, stars, business funds, today's sales, costs and profit, markup and
+employees. Enter opens the game's business panel. Amounts marked with a
+plus or minus sign say plus or minus.
+In a business's Manage Employees window, each Sim available for hire is
+its own item: arrow to a Sim and press Enter to hire. Current employees
+have Promote, Demote and Fire buttons after their name.
+In a business's Transfer Funds dialog (Get to Work), the two lists say
+From and To, and Confirm says the amount and both ends. In the move
+dialog, each furnishing choice says which home it is for.
+
+NEW GAME: GUIDED CREATE A SIM (TEST VERSION)
+
+When Create a Sim opens for a new family (after the questionnaire choice),
+a Create your Sim window offers a step-by-step guide. Start opens the
+name step. Type the name opens the name boxes: type the first name, press
+Tab, type the last name, then press Enter (Escape cancels). Random name
+lets the game pick. Skip, or Escape on the first window, uses the full
+Create a Sim screen. Then come age, gender, traits and aspiration, each a
+window of buttons. Traits: Add a trait chooses a group, then a trait
+(traits that clash with your choices are left out). Remove a trait takes
+one off, and Next moves on. Aspiration: choose a category, then an
+aspiration. The Your Sim window reads the name, traits and aspiration and
+lets you change any of them before Done. Voice and walk style (optional)
+lets you pick a voice, its pitch (Lowest to Highest) and a walk style;
+skip it if you like. Escape in a step goes back one
+step. After Done, Find a home saves your household and opens the world
+map. If Seasons is installed, choose a season first. Then choose a world
+(each says how many homes you can afford) and a home (cheapest first,
+with bedrooms, bathrooms and price). Choose Furnished or Unfurnished:
+each says what money is left. The guide then buys the home in the game's
+own move-in window, and the game loads your lot. Escape on the world
+list closes the guide and leaves the map to Tab browsing.
+Before Find a home, Add another Sim adds a Sim to the household and runs
+the same steps for them, then asks how they are related to the others
+(for example Spouse, Parent or Sibling). Set relationships changes those
+later, and Change another Sim goes back to any Sim's summary. Homes list
+houses first, cheapest first; empty lots, where you build the house
+yourself, come last.
+
+NEW GAME: SEASON AND HOME
+
+If Seasons is installed, the season screen has four choices: Spring,
+Summer, Fall and Winter. Tab and Shift+Tab move between them. Space
+selects a season without leaving the screen. Enter chooses the focused
+season and continues to the world map.
+
+On the world and neighborhood maps, Tab enters keyboard browsing. Use
+Tab or the arrow keys to browse and Enter to select. Lot descriptions
+include occupancy and affordability.
+After choosing a house, Tab to Confirm and press Enter to open its
+move-in dialog. Enter opens the furnishing choice, arrows browse
+the options, and Enter selects one. Tab reaches Purchase Home. Listen to
+the furnishing choice and remaining funds before pressing Enter to buy.
+Escape cancels the dialog.
+
+GENERAL SHORTCUTS
+
+Close text fields before using these shortcuts. Most actions also require
+closing menus. Day and time can be read while a menu is open. The phone
+shortcut works from the call alert or HUD panels; close dialogs and pickers first.
+
+Ctrl+Alt+H: Open the accessibility menu.
+Choose Keyboard shortcuts in that menu to hear the controls.
+Ctrl+Shift+N: Read needs.
+Ctrl+Alt+L: Turn diagnostic logging on or off (TS4_Access.log next to the mod).
+Ctrl+Alt+V: Running events. Enter on one to send all guests home and end it,
+end it, or send all guests home. Your household is never sent away.
+Ctrl+Alt+M: Milestones of the active Sim (Growing Together). Enter on a
+category reads its milestones.
+Ctrl+Alt+K: Character values of the active Sim (Parenthood).
+Ctrl+Alt+C: Read the current day and time, including when the game is paused,
+then your household funds.
+Ctrl+Alt+E: Read the mood and its description, then every moodlet with
+its effect, time left, reason and description, all at once.
+Ctrl+Alt+G: Read wants and fears.
+Ctrl+Alt+Q: Open the action queue. Each row is something the active Sim is
+doing or waiting to do, with who chose it. Enter cancels that action.
+Ctrl+Alt+P: Open a waiting call or text. With Simplified menus on and
+nothing waiting, open the phone action list.
+Ctrl+Alt+1 through Ctrl+Alt+8: Switch household Sim.
+M: Open travel. With Simplified menus on, choose Go alone or Choose who
+comes. Uses destination lists when Travel list is enabled.
+
+The accessibility menu also opens panels such as skills, career,
+inventory, relationships and calendar. It includes self interactions,
+the action queue, events, day and time, household Sims and funds, known contacts and settings.
+With Growing Together installed, Milestones (also Ctrl+Alt+M) lists the active Sim's milestone
+categories; Enter on one reads each milestone, whether and at what age it
+was reached, and the game's text or hint. With Parenthood installed,
+Character values (also Ctrl+Alt+K) reads each value on its scale, the trait it leads to at
+age up, and its description.
+
+TS4 ACCESS PLUS (ALT KEYS)
+
+By Michael Maslo, contributed through LeonianUniverse and merged into TS4 Access.
+Hold Alt (not Ctrl) and press a letter. Do not also install the separate
+TS4_Access_Plus.ts4script.
+
+Alt+A: Access Plus menu, every feature and the Plus settings.
+Alt+N: Needs with percentages, lowest first.
+Alt+T: Day, time, game speed, when work or school starts, money and bills.
+Alt+Q: The action queue (the same as Ctrl+Alt+Q).
+Alt+R: Rooms of the house and what is in them. Enter on a thing opens its
+actions.
+Alt+W: Which room your Sim is in, and which floor.
+Alt+L: The last 30 notifications, newest first.
+Alt+C: Create and edit Sims without Create a Sim: start a brand-new family
+on an empty lot or a house, add a Sim, change a name, traits or aspiration.
+Alt+B: Build helper, in Build mode: build my house (one or two floors),
+put a roof on, build a room, draw a wall, doors and windows, decorate,
+furnish, sell things in a room, name rooms, and an accessible catalog.
+In Build mode, Alt+arrows move a drawing cursor 1 meter (Shift+Alt+arrows
+5 meters), Alt+S marks the start, Alt+D draws, Alt+X says where the cursor
+is, Alt+Z undoes.
+The build helper moves the real mouse for the game's own tools: leave the
+mouse alone and keep the game window in front while it works.
+Automatic messages (each can be switched off in Alt+A, Settings): low needs,
+work and school in the next hour, bills, game speed changes, Build or Live
+mode, and an action given while the game is paused.
+Guides: docs/plus in the source kit.
+
+OPTIONAL NUMPAD
+
+Enable Numpad navigation in settings and turn NumLock on.
+These keys navigate menus and panels, not the world scanner.
+
+Numpad 4: Previous control.
+Numpad 6: Next control.
+Numpad 5: Activate.
+Numpad 8: Read the current control or stop speech.
+Numpad decimal: Back or close.
+
+OPTIONAL CTRL+ALT SCANNER NAVIGATION
+
+You can browse without Scanner mode by holding Ctrl+Alt with these keys.
+You do not need this alternative when using ordinary scanner keys.
+
+Up or Down: Previous or next item.
+Right: Enter a group, or repeat an individual item.
+Left or Backspace: Go back one level.
+Enter: Enter a group or open interactions.
+Page Up or Page Down: Jump to the previous or next subcategory.
+R: Repeat speech.
+S: Refresh the scanner.
+W: Read your location.
+
+While a dialog is open, Ctrl+Alt+arrows navigate its controls, Enter
+activates, Backspace goes back or closes when allowed, and H reads help.
+Scanner refresh and subcategory jumps do not operate behind dialogs.
+On layouts with AltGr, use left Ctrl and left Alt for these shortcuts.
+If Ctrl+Alt+arrows rotates your screen, disable the competing rotation
+shortcut in your graphics software.
+
+BUILD: PLACING OBJECTS
+
+Build controls are on by default. Press F2 to enter Build mode.
+If you previously turned Build controls off, enable them in settings first.
+Entering Build mode turns off a Live lot grid.
+This places objects from the Build catalog. It does not build walls,
+floors, roofs, rooms or stairs; see README.txt for what is not covered.
+
+1. Open the Build catalog and choose an object with Enter.
+2. Press Ctrl+Alt+B. You hear "Build placement on", the chosen object and
+   which side of the lot the street is on. The catalog stays open for the
+   game; Tab returns to it and Escape comes back.
+3. Move with the plain arrow keys, one tile at a time. Up is north.
+   Each tile says what stands on it, walls and doors around it, when you
+   enter another room or go outside, and whether the chosen object fits
+   there at its current facing.
+4. Press R to turn the object (Shift+R turns it the other way).
+5. Press Enter to buy it and place it exactly on this tile.
+   If it does not fit, you hear why and the nearest tile where it fits,
+   for example "It fits 2 east, facing north". Press Enter again to place
+   it there, or move to cancel.
+After placing, you hear its facing and the tiles it covers, and the cursor
+moves onto it.
+
+While Build placement is on:
+Arrow keys: Move one tile. Hold to repeat.
+Page Up / Page Down: Go up or down a floor.
+Enter: Place the chosen object here (or take the offered spot).
+R / Shift+R: Turn the chosen object.
+Space: Read this tile again.
+1: What stands here, with anything on it and free spots on surfaces.
+2: Floor, inside or outside.
+3: Walls and doors on all four sides.
+4: Objects within 3 tiles, with directions.
+5: The chosen object, its facing and whether it fits here.
+6: Your position on the lot, the street side and the front door.
+Home: Jump to the last placed object.
+Delete: Sell the object here. Press twice to confirm.
+Escape or Backspace: Turn Build placement off.
+Tab: Go back to the Build catalog. Escape there returns to placement.
+In Build mode, Tab moves through the catalog in this order: filters (when a
+category is open), search, the Build/Buy/Function tabs, categories, then the
+products and their colours. EA's tool buttons, such as undo, are left out;
+use the game's own hotkeys for them.
+The Ctrl+Alt keys still work: Ctrl+Alt+arrows move, Ctrl+Alt+Enter
+places, Ctrl+Alt+Z undoes the last placement and gets the money back,
+Ctrl+Alt+X sells, and Ctrl+Alt+left or right bracket turns the object you
+last placed.
+
+To place on a desk, table or counter, move onto it. Its free spots are
+read out, and objects such as computers and lamps go into a free spot.
+Objects that hang on walls or ceilings are not placed from the cursor yet.
+Scanner mode does not need to be turned off in Build mode.
+Press F1 to return to Live mode. This turns Build placement off.
+Undo with Ctrl+Alt+Z covers placements made this way. The game's own
+Build undo does not.
+When objects share a tile, selling targets a slotted object before the
+surface beneath it. Sale and undo refuse an object that contains another
+object or is being used; remove its contents or finish the interaction first.
+
+LOT GRID IN LIVE MODE
+
+Enable Build controls and turn Scanner mode off before using the grid in
+Live mode.
+
+Ctrl+Alt+T: Turn the grid on or off.
+
+While the grid is active, hold Ctrl+Alt with:
+Arrow keys: Move the sampled point one metre.
+Page Up: Go up a floor.
+Page Down: Go down a floor.
+Enter, R, W or S: Describe the sampled point.
+Backspace: Exit the grid.
+
+In Live mode the grid only reads the lot. It does not place objects.
+

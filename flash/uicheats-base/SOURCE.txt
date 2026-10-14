@@ -1,0 +1,3 @@
+Six UI Cheats Extension v1.59.1 baseline movies from the existing development workspace.
+Original extraction recorded 2026-08-28. Third-party/game rights remain with their owners.
+Private development inputs, not a new license grant. Rebase after UI Cheats changes.

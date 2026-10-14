@@ -1,0 +1,45 @@
+{
+ "stamp": "2026-09-26_2209",
+ "modules": 25,
+ "main_zip": {
+  "name": "TS4_Access_2026-09-26.zip",
+  "sha256": "ee662ead30bbedd8a005c8cf4d06b1fe894392172190896fead68e19e17b7f30"
+ },
+ "compat_zip": {
+  "name": "TS4_Access_Compatibility_UICheats_2026-09-26.zip",
+  "sha256": "c44f153822b4e2980de07da918407a1e515fd345f03e9fb478358c8641a4bd2e"
+ },
+ "files": {
+  "CHEATS.txt": {
+   "bytes": 1909,
+   "sha256": "19e64cbf57fef14bea929a8a69119b9132da9b14f96ba6be28761a3aa282ef1d"
+  },
+  "CONTROLS.txt": {
+   "bytes": 8879,
+   "sha256": "3aba22d25b20fec1c15216039f36879ce292dc6431b80b5b362786a3a1179f9b"
+  },
+  "README.txt": {
+   "bytes": 9702,
+   "sha256": "82a7ada107e1f12647a22c792e2774d5178aaca47ce315d97b76ed1583137cf8"
+  },
+  "TS4_Access.ts4script": {
+   "bytes": 392358,
+   "sha256": "7b6974ced4d8a65396e90a2210fa3c14e2c160389149d788512874c6c5d6634e"
+  },
+  "TS4_Access_UI.package": {
+   "bytes": 19869946,
+   "sha256": "aa12430a588ffd6b44e2c572402159a37d9c21f247a6d834ae24802566a8312d"
+  },
+  "README-UICheats-compat.txt": {
+   "bytes": 457,
+   "sha256": "c00b7c200a41d58524d4b2ed27405920a2fd2e38abb7bb60175f14611bd31ff1"
+  },
+  "TS4_Access_Compatibility_UICheats.package": {
+   "bytes": 4756657,
+   "sha256": "58096e5eb3da3b472bdee0e547214f63d2d206b23cf4a59a682b782fe9745472"
+  }
+ },
+ "frozen_manifest": "build/phone-clock-hotfix/script-manifest.json",
+ "final_dir": "build\\phone-clock-hotfix",
+ "readme": "<original-project>\\README.txt"
+}

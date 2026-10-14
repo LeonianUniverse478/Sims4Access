@@ -1,0 +1,176 @@
+TS4 ACCESS PLUS - CHANGELOG
+
+0.7.1 - October 7, 2026 (NOT yet tested in the game)
+- FIX for "I stopped building at the bedroom 1, because the walls did
+  not close" (your sister, two-floor house, first upstairs room).
+  The mod now waits up to 5 seconds for a new room to show up (slower
+  computers take longer, upstairs especially). If the walls still did
+  not close, it takes them back with Undo and draws the room again,
+  up to 4 tries, instead of stopping.
+- The log file is now ALSO saved in your Windows user folder:
+  C:\Users\(your name)\TS4_Access_Plus.log  (outside OneDrive), so it
+  can always be found. If the Mods folder copy cannot be written, that
+  copy says why.
+
+0.7.0 - October 7, 2026 (tested live by Claude, game NOT saved)
+TWO-FLOOR HOUSES WITH STAIRS (Alt+B, Build my house)
+- Three new choices in Build my house, for lots that are too small for a
+  one-floor house. Each is 10 by 11 meters with stairs in the hallway:
+    Two floors, 3 bedrooms (downstairs living room, kitchen, dining room,
+      bathroom; upstairs 3 bedrooms and a bathroom)
+    Two floors, 4 bedrooms (a bedroom downstairs instead of the dining room)
+    Two floors, 2 bedrooms (a study upstairs instead of bedroom 3)
+  TESTED: the 3 bedroom house was built with all 10 rooms, the stairs
+  and all 9 doors, and a Sim can walk to every room, upstairs too.
+  It cost about 9,900 simoleons, so it needs about 10,000.
+- Put a roof on my house now puts the roof on the TOP floor (TESTED).
+- Decorate a room and Furnish a room work on upstairs rooms (TESTED:
+  upstairs floor painted, upstairs bedroom furnished).
+- The mod switches floors itself (Page Up / Page Down). After building
+  you are back on the ground floor.
+- FIX for "I stopped building at the living room, because it came out
+  a different size": the mouse could land on the catalog panel or the
+  Cancel bar at the bottom of the screen, or on something already
+  standing on the lot. The mod now never points at the bottom panels.
+  If it still happens, start on an EMPTY lot and send Claude the file
+  TS4_Access_Plus.log from the Mods folder.
+
+0.6.0 - October 6, 2026 (tested live by Claude, game NOT saved)
+NEW IN THE BUILD HELPER (Alt+B in Build mode)
+- Put a roof on my house (TESTED: a gabled roof over the whole 11 by 11
+  meter house). Choose a roof style from the list. Roofs cost nothing.
+- Draw with a cursor, like sighted players (TESTED: wall drawn, undo).
+  Alt+arrows move a cursor 1 meter (Shift+Alt+arrows 5 meters). You hear
+  where it is, which rooms are around it, and if it is on a wall.
+  Alt+S marks the start, Alt+D draws from the start to the cursor,
+  Alt+X says where you are, Alt+Z takes back the last thing.
+  Tools (Alt+B, Choose the drawing tool): Wall, Room, Roof.
+- Fences do not work yet (the game refused them). Coming later.
+
+0.5.2 - October 6, 2026 (NOT tested in the game yet)
+- If you give a Sim an action (like Play with Shay) while the game is
+  PAUSED, you now hear "Added to the queue. The game is paused, so it
+  waits. Press 1 to play." Before, nothing happened and nothing was said.
+- Going back to Live mode also tells you when the game is paused.
+
+0.5.1 - October 6, 2026 (NOT tested in the game yet)
+- The mod now SAYS the mode when you switch. Fn+F2 says "Build mode. Press
+  Alt B for the build helper." Fn+F1 says "Live mode."
+
+0.5.0 - October 6, 2026 (tested live by Claude, game NOT saved)
+NEW IN THE BUILD HELPER (Alt+B in Build mode)
+- Decorate a room (TESTED: walls and floor painted): choose the room, then Walls or Floor, then a paint,
+  wallpaper or floor from a list with prices. The whole room is done at
+  once and you hear what it cost. The first color of each pattern is used
+  for now. Choosing other colors comes later.
+- Sell things in a room (TESTED: sold 2 things, got 170 back): lists everything in the room with what it sells
+  for. Check the ones you want to sell (Space or Enter), choose OK, then
+  say Yes. You get the money back, the same as the TS4 Access X key.
+  Things that have something on them, or that someone is using, cannot be
+  sold until that is moved.
+NEXT: moving and turning furniture, choosing colors, stairs.
+
+0.4.0 - October 6, 2026 (tested live by Claude on your lot, game NOT saved)
+NEW IN THE BUILD HELPER (Alt+B in Build mode, Fn+F2 on your laptop)
+- Build my house: choose the rooms (or a ready list like living room,
+  kitchen, bathroom and 2 bedrooms). It builds the house facing the street:
+  living room and kitchen at the front, a hallway, bedrooms and bathroom at
+  the back. ONE front door into the living room, and inside doors between
+  the rooms. You hear the plan and price first. Tested: all 6 rooms and
+  6 doors built exactly, 5,290 simoleons.
+- Furnish a room with the basics: say what kind of room it is (bedroom for
+  a couple, toddler room, bathroom, kitchen, living room...). It buys and
+  places the needed things, turned to face into the room. Tested on every
+  room.
+- Door between two rooms (or to the yard), in the middle of the shared wall.
+- Remove a door or window, with a refund. Tested.
+- Name a room. Rooms built by Build my house are named automatically.
+- Alt+R and the build helper now use those names.
+FIXES
+- "Paused" was sometimes said twice.
+KNOWN
+- Ceiling lights cannot be placed from the keyboard yet: floor lamps instead.
+
+0.3.1 - October 6, 2026
+- The game now SAYS every speed change: "Paused" when you press P,
+  "Normal speed", "Fast speed", "Ultra fast speed" for 1, 2, 3, and when
+  P un-pauses. Opening a menu or list does not say "Paused".
+  Alt+A, Settings, "Speak game speed" turns it off if you ever want.
+
+0.3.0 - October 6, 2026 (tested live by Claude, game NOT saved, your save untouched)
+
+NEW: START A BRAND-NEW FAMILY (Alt+C, first choice)
+- Make 1 to 8 Sims: family name, then for each Sim age, gender, first name,
+  traits, aspiration, and how they are related (married, child, parent,
+  brother or sister, or roommate).
+- Choose an empty lot to build on, or a ready-made house. Each says its
+  town, price and the money left. The family gets 20,000 simoleons.
+- The game moves the family in and switches to playing them. The family you
+  were playing stays in the town.
+- Tested: a married couple with a daughter moved onto an empty lot in
+  Newcrest (Comfy Cubby). A single Sim moved into a house (Nookstone).
+  Marriage and parents were set correctly.
+- Full steps: MAKE_YOUR_OWN_FAMILY_AND_HOUSE.txt
+
+FIXES
+- ARROW KEYS: JAWS was catching the arrow keys, so Up and Down did nothing
+  in the game's lists. New JAWS key file TS4_x64.jkm (same fix as
+  Fallout 4) passes them to the game. Tested: arrows work now.
+- New Sims got extra random traits from the game. Now they get exactly the
+  traits you choose (also for "Add a new Sim to this household").
+- Trait lists: "Done" moved to the END of the list, so pressing Enter on the
+  first row never finishes by accident.
+- The game's tutorial aspirations are no longer offered.
+
+KNOWN
+- TS4 Access says "Needs - O" when a list closes. Harmless.
+- Lot prices are "about": within 100 simoleons.
+- Stairs, second floors and roofs: next.
+Add-on for the TS4 Access mod. File: Mods\TS4_Access_Plus.ts4script
+Source and tools: Downloads\TS4_Access_Review\plus
+
+0.2.0 - October 4, 2026 (tested live by Claude in your Robinson save, not saved)
+
+TESTED AND WORKING
+- Alt+N needs, Alt+T time/work/money, Alt+W where am I, Alt+L notifications.
+- Alt+Q action queue: lists actions, "Cancel everything" works.
+- Alt+R rooms: found Bathroom, Bedroom, Kitchen, Living room correctly; opening
+  an object (the stove) opens its action menu.
+- Alt+C new Sim: age, gender, name, traits, aspiration. A Sim was created and joined.
+  Traits are now chosen one at a time with Enter (no Done button needed).
+  Typing names: type, then Enter. Enter on an empty box keeps the old name.
+- Alt+A menu and settings.
+- Need warning spoken when hunger was low.
+- Alt+B build helper (in Build mode, F2):
+  - Build a room: tested, built 3 by 3 rooms. It checks the result and
+    corrects itself when the game makes it a meter short next to old walls.
+  - Draw a wall: tested, built a 3 meter wall.
+  - Put a door on a wall: tested, placed a door. It now lists each wall of a
+    room meter by meter and tells you where doors and windows already are.
+  - Paint walls: tested, painted the bedroom walls blue.
+  - Undo the last build step: tested.
+  - Catalog: NEW. Doors, windows, wall patterns, floor patterns, furniture by
+    kind, as lists with prices and number of colors. Enter chooses an item,
+    exactly as clicking it would. Tested with doors and lamps.
+  - Furnished rooms: NEW. Ready-made bathrooms, bedrooms, kitchens and more
+    from the game, placed whole. Tested with a bathroom.
+  - Put the chosen object in a room: tested with a lamp.
+  - Paint the floor of a room: not tested yet.
+
+IMPORTANT CHANGE TO THE TS4 ACCESS INTERFACE FILE
+- The Catalog needs a small addition inside TS4 Access's interface file
+  (Mods\TS4_Access_UI.package). Claude added it to all 25 interface parts and
+  checked each one: nothing else in TS4 Access was changed.
+- The untouched original is saved in Downloads\TS4_Access_Review\backup.
+- If you update TS4 Access, the Catalog stops working until Claude re-applies
+  the addition (everything else in Access Plus keeps working).
+
+KNOWN LIMITS
+- When the game refuses to place something, it now says why (the game's own
+  message), for example furniture in the way.
+- Walls: straight walls only, along the grid.
+- Roofs, stairs and second floors are not done yet.
+
+0.1.0 - October 4, 2026
+- First version: needs, time, queue, rooms, notifications, create/edit Sims.
+

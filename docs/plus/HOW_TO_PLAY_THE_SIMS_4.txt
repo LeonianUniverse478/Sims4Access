@@ -1,0 +1,261 @@
+HOW TO PLAY THE SIMS 4 WITH A SCREEN READER
+A beginner's guide, written for you by Claude, October 2026.
+Uses two mods: TS4 Access (by another author) and TS4 Access Plus (my add-on).
+
+Read one part at a time. You do not need to learn it all at once.
+
+
+PART 1. WHAT THE GAME IS
+
+The Sims 4 is a life game. There is no story you must finish and no way to
+"lose". You look after a family of people called Sims. You tell them what to
+do: eat, sleep, shower, go to work, make friends, learn skills, fall in love.
+Time keeps moving, like a real day, but much faster.
+
+Your goals are whatever you like. Common goals:
+- Get your Sim a job and promotions, and earn money.
+- Learn skills, like cooking or painting.
+- Make friends, find a partner, start a family.
+- Complete the Sim's aspiration. That is a life goal with steps, for
+  example "Become friends with 10 Sims".
+
+Sims have six NEEDS. They go down over time, and you must refill them:
+- Hunger: eat. Use the fridge (Quick Meal or Cook) or eat a served plate.
+- Bladder: use the toilet.
+- Energy: sleep in a bed. A full night is about 8 game hours.
+- Hygiene: shower or take a bath.
+- Fun: watch TV, play on the computer, read a book.
+- Social: talk to other Sims.
+If a need gets very low, the Sim gets unhappy, and a Sim with no energy
+falls asleep on the floor. A Sim who is very hungry for too long can die,
+so keep an eye on hunger.
+
+Sims also have a MOOD, like Happy, Sad, Angry, Tense or Inspired. Moods come
+from "moodlets", small feelings caused by what happens. A happy Sim learns
+faster and works better.
+
+
+PART 2. BEFORE YOU START THE GAME
+
+1. Close the game if it is open.
+2. You do not need to run TS4AccessHelper.exe every time. Run it only
+   after a Sims 4 update. It turns the mod settings back on. Mods are on
+   right now.
+3. Start JAWS first, then start The Sims 4 from Steam.
+4. On the main menu, TS4 Access reads the buttons. Use arrows and Enter.
+
+
+PART 3. GETTING A FAMILY TO PLAY
+
+You already have a saved game (it was saved on September 29). To continue:
+choose Load Game on the main menu, then choose the save and press Enter.
+
+Other ways to get a family:
+- Play a family that comes with the game. The game includes ready-made
+  families, for example the Goths and the Pancakes in Willow Creek.
+  From inside a game, open the game menu with Escape and choose
+  Manage Worlds. Press Tab to browse the map, choose a house with a family,
+  and choose Play.
+- Start a brand-new family of your own, with your own home: load any
+  save, press Alt+C and choose "Start a brand-new family". Full steps are
+  in MAKE_YOUR_OWN_FAMILY_AND_HOUSE.txt.
+- Make your own Sims. The game's own Create a Sim screen mostly needs a
+  mouse. My add-on gets around that: load any family, then press Alt+C and
+  choose "Add a new Sim to this household". You choose age, gender, name and
+  traits by keyboard. The game gives the Sim a random look.
+  You can also change the name, traits and aspiration of a Sim you already
+  have. Note: a household can hold at most 8 Sims.
+
+
+PART 4. THE TWO MOST IMPORTANT TOOLS
+
+A. THE SCANNER (from TS4 Access): finding things and telling Sims what to do
+
+In The Sims you tell a Sim what to do by choosing an object or another Sim
+and picking an action from its menu. For example: fridge, then "Quick Meal".
+
+1. Turn Scanner mode on with Ctrl+Alt+Space. Wait to hear "Scanner".
+   (It stays on. You only need to do this once.)
+2. Up and Down arrows move through groups: Sims, Appliances, Plumbing,
+   Comfort and so on. Each item says its distance and direction.
+3. Right arrow enters a group. Up and Down move through its items.
+4. Enter on an item opens its action menu. Up and Down to choose an action,
+   Enter to do it.
+5. Left arrow or Backspace goes back out.
+
+Example, to eat: Scanner, find Appliances, Right arrow, find the
+Refrigerator, Enter, choose "Quick Meal" or "Cook", Enter.
+Example, to sleep: Scanner, Comfort, Right, the bed, Enter, "Sleep".
+Example, to chat: Scanner, Sims, Right, a Sim's name, Enter, then choose
+a friendly action such as "Get to Know" or a chat.
+
+The scanner only lists things your Sim can use right now.
+
+B. THE ACCESS PLUS KEYS (my add-on): information and help
+
+Hold Alt and press a letter:
+  Alt+A  The Access Plus menu. Lists every feature. Start here if you forget.
+  Alt+N  Needs. Reads all six needs, lowest first, with a percentage.
+  Alt+T  Time. Day, time, game speed, when work or school starts,
+         household money, and unpaid bills.
+  Alt+Q  Action queue. Lists what your Sim is doing and what is waiting.
+         Choose an action to cancel it, or choose "Cancel everything".
+  Alt+R  Rooms. Lists the rooms of the house: kitchen, bathroom, bedroom
+         and so on, with their size and direction. Choose a room to hear
+         everything in it. Choose an object to open its action menu.
+  Alt+W  Where am I. Which room your Sim is in, and which floor.
+  Alt+L  Last notifications. The pop-up messages, newest first, such as
+         "promoted", "bills have arrived", or a skill level gained.
+  Alt+C  Create and edit Sims.
+  Alt+B  Build helper (only in Build mode, F2). See part 9.
+
+Typing in an Access Plus text box: just type, then press Enter. Escape
+cancels. When a name is already filled in, Enter on its own keeps it.
+
+Automatic warnings (Alt+A, then Settings, turns each one on or off):
+- Need warnings: you hear for example "Bladder low", or "Bella: Hunger very
+  low". These are the most important sounds in the game. Act on them.
+- Work reminders: "Bella has work in 1 hour, at 9 AM".
+- Bills: "Bills have arrived: 450 simoleons. Pay them at the mailbox."
+
+Other useful TS4 Access keys:
+  Ctrl+Alt+H      TS4 Access menu: skills, career, relationships, inventory,
+                  calendar, phone, settings.
+  Ctrl+Shift+N    Needs (the TS4 Access version).
+  Ctrl+Alt+E      Mood and moodlets.
+  Ctrl+Alt+G      Wants and fears.
+  Ctrl+Alt+P      Phone: answer a call or text, or open phone actions.
+  Ctrl+Alt+1 to 8 Switch to another Sim in your household.
+  Ctrl+Alt+W      Read your location in the scanner.
+  M               Travel to another place.
+  Escape          Game menu (Save, Load, Options, Quit).
+
+
+PART 5. GAME SPEED
+
+The game runs in real time but much faster than real life.
+- P pauses the game. Pause whenever you need to think. Nothing happens while
+  paused, and you can still give orders.
+- 1 is normal speed, 2 is fast, 3 is ultra fast.
+Alt+T tells you the current speed.
+A good habit: give orders while paused, then press 1 or 2 to let them happen.
+
+
+PART 6. A GOOD FIRST DAY (A SIMPLE ROUTINE)
+
+1. Load your save. Press P to pause. Press Alt+T to hear the time.
+2. Press Alt+N to check needs. Fix the lowest one first.
+3. Get a job:
+   Ctrl+Alt+P opens the phone actions. Look for the career category and
+   "Find a Job". Pick a career. Good first careers: Culinary (cooking),
+   Painter, Writer, Tech Guru.
+   Or use the computer: Scanner, the computer, Enter, look for "Find a Job".
+4. Your Sim goes to work by themselves when work starts. You hear the
+   reminder an hour before. Make sure needs are good before work.
+5. While the Sim is home and free: learn a skill that helps the job.
+   Writer: write on the computer. Culinary: cook at the fridge or stove.
+   Painter: paint at an easel.
+6. In the evening: eat, have fun, chat with someone, shower.
+7. Go to bed around 10 or 11 PM so the Sim can get up for work.
+   At night, press 3 for ultra fast speed while everyone sleeps.
+8. Save often: Escape, then Save.
+
+Money: you start with some simoleons (the money). Every few days bills
+arrive in the mailbox. Pay them at the mailbox (Scanner, the mailbox, Enter,
+Pay Bills). If you do not pay, the power and water get cut off.
+
+
+PART 7. FRIENDS AND RELATIONSHIPS
+
+Choose another Sim with the scanner and press Enter. The menu has groups
+such as Friendly, Romance, Mean, Funny. Friendly actions build friendship.
+Start with "Introduce Yourself" or "Get to Know", then chat, tell jokes,
+compliment. Ctrl+Alt+H, then relationships, shows how friendly you are with
+everyone.
+
+
+PART 8. SKILLS, ASPIRATIONS, CAREERS
+
+- Skills go from level 1 to 10. You hear when your Sim gains a level, and you
+  can read it again with Alt+L. Ctrl+Alt+H, then skills, lists them.
+- Your Sim's aspiration has steps. Ctrl+Alt+H, then aspirations, shows the
+  current goals. Finishing them gives rewards.
+- Careers: go to work every day, keep the mood good, and do the daily task
+  (Ctrl+Alt+H, then career, tells you what helps). This leads to promotions
+  and more money.
+
+
+PART 9. BUYING THINGS AND BUILDING (Alt+B)
+
+F2 opens Build mode. F1 goes back to Live mode. In Build mode, press Alt+B
+for the build helper. Everything below is in that menu.
+
+Positions on your lot are given in meters: how far from the WEST edge,
+and how far from the NORTH edge. "Describe the lot" tells you the lot size,
+where every room is, and where your Sim stands.
+
+A. ADD A WHOLE FURNISHED ROOM (the easiest way to build)
+   1. Alt+B, Catalog, Furnished rooms, then a kind: Bathrooms, Bedrooms,
+      Kitchens, Living rooms and more. Each has a name and a price.
+   2. Press Enter on one you can afford.
+   3. Alt+B, "Place the chosen furnished room". You get a list of free
+      places, each saying whether the room will join the house. Press Enter.
+   4. You hear the size of the new room and where it is.
+   The new room comes with its own door, but it may face outside. Add a door
+   into the house as in C below.
+
+B. BUILD AN EMPTY ROOM
+   1. In the game's catalog choose the Room Tool. The quickest way: Alt+B,
+      Catalog, "Rooms and wall tools", Room Tool.
+   2. Alt+B, "Build a room". Type the width (west to east) and depth (north
+      to south), for example 4 5, and press Enter.
+   3. Choose one of the free places offered. You hear when it is built.
+   Rooms must stay 1 meter inside the edge of the lot.
+
+C. DOORS AND WINDOWS
+   1. Alt+B, Catalog, Doors (or Windows). Enter on one.
+   2. Alt+B, "Put the chosen door or window on a wall".
+   3. Choose the room, then the wall. Each wall says how long it is and how
+      many doors and windows it already has.
+   4. Choose the meter along the wall. Each one says "Free" or what is there.
+   If the game refuses, you hear why, for example
+   "Can't intersect other objects" (furniture is in the way).
+
+D. FURNITURE
+   1. Alt+B, Catalog, "Furniture and other objects", then a kind, such as
+      Beds or Refrigerators. Enter on one.
+   2. Alt+B, "Put the chosen object in a room". Choose the room.
+   TS4 Access finds a free spot and tells you where it went and the price.
+   (TS4 Access's own grid placement, in its CONTROLS.txt, still works too.)
+
+E. PAINT
+   Alt+B, Catalog, "Wall patterns" (or "Floor patterns"), Enter on one.
+   Then Alt+B, "Paint the walls of a room" (or the floor). The whole room
+   is painted.
+
+F. MISTAKES
+   Alt+B, "Undo the last build step". You get the money back.
+
+Not done yet: roofs, stairs and second floors. In the base game a roof is
+only for looks: Sims do not get wet, because there is no weather.
+Moving to a bigger furnished house is still an option: phone actions, Move
+Household.
+
+
+PART 10. IF SOMETHING GOES WRONG
+
+- IMPORTANT: Shift+Tab opens the Steam overlay on top of the game, and then
+  the game gets no keys at all. If the game suddenly stops answering, press
+  Shift+Tab once more to close the overlay. Claude can turn the overlay off
+  for The Sims 4 if you want; just ask.
+
+- A Sim is stuck or will not do something: Alt+Q and cancel the action, then
+  try again.
+- You hear nothing when pressing an Alt key: make sure the game window is in
+  front, and that a family is loaded.
+- The game reads too much or jumps around: that is TS4 Access's reader.
+  Ctrl+Alt+R reads the current thing again, or stops speech.
+- After a Sims 4 update the mods may be off: close the game, run
+  TS4AccessHelper.exe, choose Enable Script Mods, start the game again.
+- Tell me what happened. My add-on writes a log file I can read:
+  Documents\Electronic Arts\The Sims 4\Mods\TS4_Access_Plus.log

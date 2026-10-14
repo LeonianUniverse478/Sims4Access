@@ -1,0 +1,2 @@
+Prism 0.18.2, unmodified. Source: https://github.com/ethindp/prism/tree/v0.18.2
+Official Windows x64 release: https://github.com/ethindp/prism/releases/tag/v0.18.2
