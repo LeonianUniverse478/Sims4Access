@@ -9,6 +9,31 @@ Install or update with TS4AccessUpdater.exe from the
 
 ---
 
+## build-2026-10-14_082553 (2026-10-14)
+
+### Build mode: catalog tree and search
+
+No more tabbing around the Buy panels to find an object.
+
+- **Ctrl+Alt+O** (in Build mode) opens the catalog as lists you move through
+  with the arrows: **Search the catalog**, **By room** or **By function**.
+  - By room: Kitchen, Bathroom, Bedroom, Living Room, Dining Room, Study,
+    Kids' Room and Outdoor, then what goes in each (for example Refrigerators,
+    Counters, Sinks).
+  - By function: Comfort, Surfaces, Plumbing, Entertainment, Decorations,
+    Kids, Lighting, Electronics, Appliances, Storage, Off the Grid, Water
+    Features and Pets, then their kinds of object.
+  - These are the game's own Buy panel categories, in your game's language.
+  - A kind of item lists every item with its price and how many colours it
+    comes in.
+- **Enter on an item picks it up**, as clicking it in the catalog does; then
+  press Ctrl+Alt+B and place it with the Build cursor as usual.
+- **Escape goes back one level**, and closes at the top.
+- **Ctrl+Alt+D searches the catalog:** type a word such as bed, fridge or
+  lamp, press Enter, and choose from what matches.
+
+---
+
 ## build-2026-10-14_061531 (2026-10-14)
 
 ### Guided new game

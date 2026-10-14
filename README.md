@@ -60,7 +60,8 @@ Download **TS4_Access_Update.zip** from the latest release, then:
 - **Readers:** the whole mood panel (Ctrl+Alt+E), funds with the clock
   (Ctrl+Alt+C), the action queue (Ctrl+Alt+Q), events (Ctrl+Alt+V), and
   Milestones and Character values for Growing Together and Parenthood.
-- **Build mode:** a tile-by-tile Build cursor, Tab straight into the catalog,
+- **Build mode:** the catalog as a tree by room or function with search
+  (Ctrl+Alt+O and Ctrl+Alt+D), a tile-by-tile Build cursor, Tab straight into the catalog,
   and Escape out of it.
 - **Inventory selling**, a Brief verbosity setting, a logging toggle
   (Ctrl+Alt+L), labelled household transfers and moves, businesses (including
