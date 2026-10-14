@@ -70,6 +70,16 @@ Download **TS4_Access_Update.zip** from the latest release, then:
 
 See the [changelog](CHANGELOG.md) for the full list.
 
+## Contributing
+
+The full source is on the
+[`dev` branch](https://github.com/LeonianUniverse478/Sims4Access/tree/dev),
+under the MIT licence. Work from there and send pull requests **into dev**; its
+[CONTRIBUTING.md](https://github.com/LeonianUniverse478/Sims4Access/blob/dev/CONTRIBUTING.md)
+explains setup and how changes are reviewed. Accepted contributions are
+credited in the changelog and in
+[CONTRIBUTORS.md](https://github.com/LeonianUniverse478/Sims4Access/blob/dev/CONTRIBUTORS.md).
+
 ## Reporting a problem
 
 Turn on logging with Ctrl+Alt+L, reproduce the problem, then send
