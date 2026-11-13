@@ -4,12 +4,12 @@ TS4 Access is a screen-reader mod for The Sims 4 by **tyjokr**. It reads menus,
 dialogs, tooltips and notifications aloud through your screen reader, and its
 scanner finds Sims and objects and opens their interactions without the mouse.
 
-This repository publishes **test builds** of TS4 Access with work by
-LeonianUniverse (Leo), shared with tyjokr's agreement. Each change is sent back
-to tyjokr to merge into the official mod. TS4 Access Plus features are by
-Michael Maslo.
+This repository publishes **test builds** of TS4 Access. LeonianUniverse (Leo)
+is now the lead developer; tyjokr, who created the mod, has moved on to other
+projects. TS4 Access Plus features are by Michael Maslo, and Build cursor and
+scanner additions by DaRainbowGirlXX.
 
-Built and tested against **The Sims 4 1.128.90.1030**, on Windows.
+Built and tested against **The Sims 4 1.129.39.1030**, on Windows.
 
 The standalone mod that used to live here, Sims 4 Access (the a11yscan scanner
 mod), is kept unchanged on the
@@ -61,8 +61,12 @@ Download **TS4_Access_Update.zip** from the latest release, then:
   (Ctrl+Alt+C), the action queue (Ctrl+Alt+Q), events (Ctrl+Alt+V), and
   Milestones and Character values for Growing Together and Parenthood.
 - **Build mode:** the catalog as a tree by room or function with search
-  (Ctrl+Alt+O and Ctrl+Alt+D), a tile-by-tile Build cursor, Tab straight into the catalog,
+  (Ctrl+Alt+O and Ctrl+Alt+I), a tile-by-tile Build cursor, Tab straight into the catalog,
   and Escape out of it.
+- **Build cursor and scanner additions** by DaRainbowGirlXX: scanner range,
+  moving furniture, wall and room reading, target layers, room labels, and
+  hanging wall objects (test feature).
+- **Holiday announcements** (Seasons), with each tradition and what to do.
 - **Inventory selling**, a Brief verbosity setting, a logging toggle
   (Ctrl+Alt+L), labelled household transfers and moves, businesses (including
   mod businesses), and keyboard hiring.
@@ -90,6 +94,7 @@ Turn on logging with Ctrl+Alt+L, reproduce the problem, then send
 
 - **TS4 Access** by tyjokr.
 - **TS4 Access Plus** by Michael Maslo.
-- **Test-build changes** by LeonianUniverse.
+- **Build cursor and scanner additions** by DaRainbowGirlXX.
+- **Lead development and test-build changes** by LeonianUniverse.
 - **Speech** through [Prism](https://github.com/ethindp/prism) by Ethin Probst,
   MPL-2.0, unmodified; its licences ship in `TS4_Access_SpeechPack`.

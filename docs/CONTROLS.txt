@@ -168,6 +168,11 @@ was reached, and the game's text or hint. With Parenthood installed,
 Character values (also Ctrl+Alt+K) reads each value on its scale, the trait it leads to at
 age up, and its description.
 
+With Seasons installed, a notification announces each holiday when its
+day starts (and when you load a save on one): its name, each tradition with
+what to do for it, and whether work or school is off. Custom and modded
+holidays are included.
+
 TS4 ACCESS PLUS (ALT KEYS)
 
 By Michael Maslo, contributed through LeonianUniverse and merged into TS4 Access.
@@ -242,7 +247,7 @@ so you never Tab around the catalog panels:
 Arrows move, Enter opens or chooses, Escape goes back one level.
 Enter on an item picks it up, as clicking it in the catalog does. Then
 press Ctrl+Alt+B and place it with the Build cursor as usual.
-Ctrl+Alt+D goes straight to search: type a word, such as bed, fridge or
+Ctrl+Alt+I goes straight to search: type a word, such as bed, fridge or
 lamp, press Enter, and choose from what matches.
 
 BUILD: PLACING OBJECTS
@@ -305,6 +310,40 @@ Build undo does not.
 When objects share a tile, selling targets a slotted object before the
 surface beneath it. Sale and undo refuse an object that contains another
 object or is being used; remove its contents or finish the interaction first.
+
+BUILD CURSOR AND SCANNER EXTRAS (BY DARAINBOWGIRLXX)
+
+Scanner range: Ctrl+Alt+comma and Ctrl+Alt+period step through 6, 12, 24 and 40
+metres, the whole lot, this floor and this room. Metre ranges always keep
+every Sim; lot, floor and room ranges limit Sims and objects alike. The
+range is remembered (Settings: scanner range).
+
+With the Build cursor on (Ctrl+Alt+B):
+- M picks up the object on this tile to move it. Go to the new tile and
+  press M again. Escape cancels the move (a second Escape leaves the
+  cursor); if the move fails, it stays where it was.
+- Tiles say walls explicitly: "Wall north" between two rooms, "Wall or
+  fence" where the edge is outdoors on both sides.
+- Ctrl+Alt+U and Ctrl+Alt+D raise and lower the target layer: ground, six
+  wall heights from very low to near the top, and ceiling. For an object
+  that hangs on a wall, that is its height; R and Shift+R choose which
+  wall it goes on. Choose it with Ctrl+Alt+O, then press Enter: the
+  game's own Build tool hangs it (the camera turns to that wall and the
+  mouse clicks there; walls are raised for it and put back after), and
+  you hear what it cost. If the game says it must be completely
+  supported by wall, move along the wall away from corners, doors and
+  windows: wider pictures need more wall.
+- 1 focuses an object on the target layer (press again for the next one);
+  M and Delete then act on it. 4 says each nearby object's layer.
+- Ctrl+Alt+J labels the room at the cursor (bedroom, kitchen and others).
+  Entering a labelled room says its name, and once a room is labelled,
+  walls and doors say which room is on each side. Labels are saved per
+  save and lot. a11y.roomlabel followed by a name sets a custom label.
+- Experimental placement for objects that go on bare ground, in water, on
+  a ceiling or on a fence. The game checks every spot before anything is
+  bought. Each can be turned off in settings.
+- With Layer focus off in settings, Ctrl+Alt+U and D only set the height
+  of a chosen wall object.
 
 LOT GRID IN LIVE MODE
 

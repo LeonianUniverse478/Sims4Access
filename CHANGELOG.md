@@ -1,11 +1,66 @@
 # TS4 Access test builds: changelog
 
-Newest first. Built and tested against **The Sims 4 1.128.90.1030**. These
-builds start from tyjokr's TS4 Access build of 2026-09-26, and every change is
-returned to tyjokr for the official mod.
+Newest first. Built and tested against **The Sims 4 1.129.39.1030**. These
+builds started from tyjokr's TS4 Access build of 2026-09-26; LeonianUniverse
+now leads development.
 
 Install or update with TS4AccessUpdater.exe from the
 [latest release](https://github.com/LeonianUniverse478/Sims4Access/releases/latest).
+
+---
+
+## build-2026-11-12_220652 (2026-11-12)
+
+### Updated for the game patch
+
+- Rebuilt on **The Sims 4 1.129.39.1030** (the patch of 31 October). EA
+  changed none of the interface code TS4 Access modifies, so behaviour is the
+  same as before; only the game's own interface files underneath are newer.
+- LeonianUniverse is now the lead developer of TS4 Access. tyjokr has moved
+  on to other projects; thank you, tyjokr, for creating the mod.
+
+### Build cursor and scanner additions by DaRainbowGirlXX
+
+DaRainbowGirlXX's contribution is now part of TS4 Access itself.
+
+- **Scanner range:** Ctrl+Alt+comma and Ctrl+Alt+period step through 6, 12,
+  24 and 40 metres, the whole lot, this floor and this room. Metre ranges
+  always keep every Sim. The range is remembered (Settings: scanner range).
+- **Moving furniture** with the Build cursor (Ctrl+Alt+B): M picks up the
+  object on the tile, M on another tile puts it down there. Escape cancels
+  the move; a second Escape leaves the cursor.
+- **Walls:** tiles now say "Wall" between two rooms and "Wall or fence" where
+  it could be either.
+- **Target layers:** Ctrl+Alt+U and Ctrl+Alt+D step through ground, six wall
+  heights and ceiling. Number 1 focuses objects on that layer (M and Delete
+  then act on the focused one); number 4 names each nearby object's layer.
+- **Room labels:** Ctrl+Alt+J labels the room at the cursor (bedroom, kitchen
+  and others). Entering a labelled room says its name, and walls and doors
+  name the room on each side once a room is labelled.
+- **Experimental placement** of objects that go on bare ground, in water, on a
+  ceiling or on a fence. The game checks every spot before anything is bought,
+  and each kind can be switched off in Settings.
+
+### Hanging wall objects (test feature)
+
+- Choose a painting or other wall object with Ctrl+Alt+O, turn on the Build
+  cursor, face a wall and press Enter: the game's own Build tool hangs it at
+  the height chosen with Ctrl+Alt+U and D, and you hear what it cost.
+- While you move, the cursor says whether it **should hang here**, **might not
+  fit** (the wall ends, or a door is right beside it) or **will not hang here**
+  (a column, window or door is in the way, something already hangs there, or
+  the game refused that spot before), with the reason.
+- This is still being tested. If a spot fails, turn on logging (Ctrl+Alt+L),
+  try again, and send TS4_Access.log plus the TS4_Access_wallshot pictures
+  from your Mods folder.
+
+### Holidays (Seasons)
+
+- When a holiday starts, a notification announces it: its name, each
+  tradition with what to do for it, and whether work or school is off. Loading
+  a save on a holiday announces it once the loading screen is gone.
+- Every holiday is included: the game's own, ones you create in the calendar,
+  and ones added by other mods.
 
 ---
 
