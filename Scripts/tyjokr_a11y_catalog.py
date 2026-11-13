@@ -5,7 +5,7 @@ function lists the Buy panel's own subcategories (tyjokr_a11y_catalogtree, made
 from EA's BuildBuyNavigation movie), and a subcategory lists its items with
 price and colours. Enter on an item picks it up exactly as clicking it in the
 catalog does, so the Build cursor (Ctrl+Alt+B) places it as usual. Escape goes
-back up one level. Ctrl+Alt+D goes straight to search.
+back up one level. Ctrl+Alt+I goes straight to search.
 
 Every level is a native picker, so the picker owns the keyboard: Build mode's
 own hotkeys never see the keys pressed in it. Item lists and selection use the

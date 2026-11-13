@@ -2,6 +2,8 @@
 
 For LeonianUniverse and his Claude, from tyjokr. This is the editable development kit, not the download players install. Keep it outside Mods.
 
+> **Maintainer change (2026-11-12).** tyjokr has stepped away from TS4 Access and LeonianUniverse is now the lead developer. Decisions about baselines, rebases and releases are made here; there is no return ZIP to send. The kit is rebased onto game **1.129.39.1030** (see docs/development/history/REBASE-1.129.39.md). The September notes below describe the original handoff.
+
 Give Claude this folder and say:
 
 > Read CLAUDE.md and docs/development before changing anything. Help me make and test my changes, then produce a return ZIP for tyjokr. Do not install, publish, or replace my game files without my instruction. Preserve the handoff baseline.

@@ -287,16 +287,26 @@ def _enter_key():
     return _place_here() if place.in_build_mode() else describe()
 
 
-def _sell_here():
-    import tyjokr_a11y_place as place
+def _sell_target():
+    """The object Delete would sell here: topmost first, as the game's own
+    Build cursor picks, a computer on a desk before the desk (live
+    2026-09-26). An object focused with number 1 on a target layer comes
+    first (tyjokr_a11y_layers). None when the tile has nothing to sell."""
+    import tyjokr_a11y_layers as layers
+    focused = layers.focused_target()
+    if focused is not None:
+        return focused
     try:
         objects = [obj for obj in _objects_at_origin() if not getattr(obj, 'is_sim', False)]
-        # Topmost first, as the game's own Build cursor picks: a computer
-        # on a desk before the desk (live 2026-09-26).
         objects.sort(key=_parent_depth, reverse=True)
     except Exception:
         objects = []
-    return place.sell(objects[0] if objects else None)
+    return objects[0] if objects else None
+
+
+def _sell_here():
+    import tyjokr_a11y_place as place
+    return place.sell(_sell_target())
 
 
 def _parent_depth(obj):
@@ -419,8 +429,17 @@ def on_key(intent):
                     'undo': place.undo, 'redo': _no_redo, 'sell': _sell_here,
                     'place': _place_here})
     if _build:
+        if intent in ('back', 'off') and _move['obj_id'] is not None:
+            _clear_move()           # Escape cancels a move before it leaves the cursor
+            _say('Move cancelled.', 'Anulowano przesuwanie.')
+            return True
+        import tyjokr_a11y_layers as layers
+        import tyjokr_a11y_rooms as rooms
         actions.update({'place': _enter_key, 'turn': lambda: _turn(1), 'turnback': lambda: _turn(-1),
-                        'last': _jump_to_last})
+                        'last': _jump_to_last, 'moveobject': _move_key,
+                        'layerup': lambda: layers.change_layer(1),
+                        'layerdown': lambda: layers.change_layer(-1),
+                        'roomlabel': rooms.show_picker})
         for topic in range(1, 7):
             actions['info{}'.format(topic)] = (lambda value=topic: _detail(value))
     callback = actions.get(intent)
@@ -498,6 +517,7 @@ def _stop_build():
     if _build:
         _flash('A11yBuildGridOff')
     _build, _offer = False, None
+    _clear_move()
 
 
 def _street_side(f):
@@ -562,28 +582,14 @@ def _object_parts(f, objects, spots=True):
     return parts
 
 
-def _wall_parts(f, all_sides=False):
-    import tyjokr_a11y_tiles as tiles
-    i, j = _tile
-    sides = tiles.walls(f, i, j, _level)
-    doors = tiles.doors(f, i, j, _level)
-    if all_sides:
-        parts = []
-        for index in range(4):
-            if index in doors:
-                state = _text('door', 'drzwi')
-            else:
-                state = {'wall': _text('wall', 'ściana'), 'edge': _text('lot edge', 'granica parceli'),
-                         'open': _text('open', 'wolne')}.get(sides.get(index), _text('unknown', 'nieznane'))
-            parts.append('{}: {}. '.format(tiles.direction_name(index).capitalize(), state))
-        return parts
-    parts = []
-    wall_dirs = [tiles.direction_name(index) for index in range(4) if sides.get(index) == 'wall' and index not in doors]
-    if wall_dirs:
-        parts.append(_text('Wall {}. ', 'Ściana: {}. ').format(_text(' and ', ' i ').join(wall_dirs)))
-    door_dirs = [tiles.direction_name(index) for index in sorted(doors)]
-    if door_dirs:
-        parts.append(_text('Door {}. ', 'Drzwi: {}. ').format(_text(' and ', ' i ').join(door_dirs)))
+def _wall_parts(f, all_sides=False, objects=None):
+    """Walls (a different room on each side), possible fences, doors and
+    the lot edge; beside walls, the rooms on either side."""
+    import tyjokr_a11y_rooms as rooms
+    import tyjokr_a11y_wall as wall
+    parts = wall.wall_parts(f, all_sides=all_sides, objects=objects)
+    if not all_sides:       # number 3 is the complete four-side report
+        parts += rooms.wall_context(f)
     return parts
 
 
@@ -595,15 +601,21 @@ def _room_parts(f):
     outside = facts.get('outside')
     parts = []
     previous_room, previous_outside = _last_room
+    import tyjokr_a11y_rooms as rooms
+    label = rooms.label_for(room, _level) if room is not None and not outside else None
     if previous_outside is not None and outside is not None and outside != previous_outside:
-        parts.append(_text('Outside. ', 'Na zewnątrz. ') if outside else _text('Inside. ', 'Wewnątrz. '))
+        if outside:
+            parts.append(_text('Outside. ', 'Na zewnątrz. '))
+        else:
+            parts.append(_text('Inside {}. ', 'Wewnątrz: {}. ').format(label) if label else _text('Inside. ', 'Wewnątrz. '))
     elif previous_room is not None and room is not None and room != previous_room and not outside:
-        parts.append(_text('Another room. ', 'Inne pomieszczenie. '))
+        parts.append(_text('Entering {}. ', 'Wchodzisz: {}. ').format(label) if label
+                     else _text('Another room. ', 'Inne pomieszczenie. '))
     _last_room[0], _last_room[1] = room, outside
     return parts, facts
 
 
-def _fit_parts(f, with_facing=True):
+def _fit_parts(f, with_facing=True, objects=None):
     """What the chosen object would do on this tile at the current facing."""
     import tyjokr_a11y_place as place
     import tyjokr_a11y_tiles as tiles
@@ -612,6 +624,12 @@ def _fit_parts(f, with_facing=True):
         return []
     need = place.requirement(item['id'])
     i, j = _tile
+    import tyjokr_a11y_surfaces as surfaces_mod
+    if need == 'wall':
+        import tyjokr_a11y_wall as wall
+        return wall.fit_parts()
+    if surfaces_mod.handles(need):
+        return surfaces_mod.fit_parts(need)
     if need == 'slot':
         surfaces = [obj for obj in tiles.objects_on(f, i, j, _level) if tiles.free_spots(obj)]
         return [_text('It can go on a surface here. ', 'Może stanąć tu na powierzchni. ') if surfaces
@@ -670,6 +688,11 @@ def _detail(topic):
         return False
     i, j = _tile
     parts = []
+    import tyjokr_a11y_layers as layers
+    if topic == 1 and layers.enabled():
+        return layers.focus_detail(f)
+    if topic == 4 and layers.enabled():
+        return layers.nearby_detail(f)
     if topic == 1:
         objects = tiles.objects_on(f, i, j, _level)
         parts = _object_parts(f, objects) if objects else [_text('Nothing here.', 'Nic tu nie ma.')]
@@ -762,6 +785,14 @@ def _build_place():
         _say('Choose an object in the Build catalog first. Tab returns to it.',
              'Najpierw wybierz obiekt w katalogu. Tab do niego wraca.')
         return False
+    need = place.requirement(item['id'])
+    if need == 'wall':
+        import tyjokr_a11y_layers as layers
+        import tyjokr_a11y_wall as wall
+        return False if layers.wall_refusal() else wall.place(item)
+    import tyjokr_a11y_surfaces as surfaces_mod
+    if surfaces_mod.handles(need):
+        return surfaces_mod.place(item, need)
     f = tiles.frame()
     if f is None:
         return False
@@ -773,7 +804,6 @@ def _build_place():
         _offer = None
         return place.place(offer['point'], _level, _surface(), angle=f.yaw(offer['facing']), exact=True)
     _offer = None
-    need = place.requirement(item['id'])
     if need == 'slot':
         target = cursor()
         if target is None:
@@ -805,6 +835,75 @@ def _build_place():
                                       ' nie mieści się tutaj: {}. Zmieści się: {}, skierowany na {}. Naciśnij Enter ponownie, aby go tam umieścić, albo przesuń kursor.'
                                       ).format(why, tiles.relative(ni - i, nj - j), tiles.direction_name(facing))])
     return False
+
+
+# Moving furniture (contributed by DaRainbowGirlXX, 2026-10-16): M on an
+# object picks it up, M on another tile puts it down there, Escape cancels.
+_move = {'obj_id': None, 'name': None}
+
+
+def _clear_move():
+    _move['obj_id'] = None
+    _move['name'] = None
+
+
+def _object_name(obj):
+    value = _name(obj)
+    return ''.join(str(part) for part in value) if isinstance(value, list) else str(value)
+
+
+def _move_key():
+    import services
+    import tyjokr_a11y_place as place
+    if _move['obj_id'] is None:
+        obj = _sell_target()
+        if obj is None:
+            _say('Nothing here to move.', 'Nie ma tu nic do przesunięcia.')
+            return False
+        refusal = place.sell_refusal(obj)
+        if refusal is not None:
+            place._say_text(*place._CANNOT_SELL[refusal])
+            return False
+        if getattr(obj, 'parent', None) is not None:
+            _say('Objects attached to another object cannot be moved from the grid yet.',
+                 'Obiektów przymocowanych do innego obiektu nie można jeszcze przesuwać z siatki.')
+            return False
+        _move['obj_id'], _move['name'] = obj.id, _object_name(obj)
+        _say('{} selected to move. Go to the new tile and press M again. Escape cancels.'.format(_move['name']),
+             'Wybrano {} do przesunięcia. Przejdź do nowego pola i ponownie naciśnij M. Escape anuluje.'.format(_move['name']))
+        return True
+    obj = services.object_manager().get(_move['obj_id'])
+    name = _move['name'] or _text('Object', 'Obiekt')
+    if obj is None:
+        _clear_move()
+        _say('The selected object is no longer available.', 'Wybrany obiekt nie jest już dostępny.')
+        return False
+    target = cursor()
+    if target is None:
+        _say('This tile cannot take the object.', 'To pole nie może przyjąć obiektu.')
+        return False
+    position, level, _ident = target
+    old_position, old_orientation, old_surface = obj.position, obj.orientation, obj.routing_surface
+    try:
+        spot = place._good_location(obj, position, old_orientation, _surface(), ignore=(obj.id,))
+        if spot is None:
+            _say('No valid position was found here.', 'Nie znaleziono tutaj prawidłowej pozycji.')
+            return False
+        obj.move_to(translation=spot[0], orientation=spot[1], routing_surface=_surface())
+        if int(getattr(obj, 'level', level)) != int(level):
+            raise RuntimeError('object stayed on another floor')
+    except Exception as ex:
+        try:
+            obj.move_to(translation=old_position, orientation=old_orientation, routing_surface=old_surface)
+        except Exception:
+            pass
+        speech.log_line('grid: move failed for {}: {!r}'.format(_move['obj_id'], ex))
+        _say('The object could not be moved; its original position was kept.',
+             'Nie udało się przesunąć obiektu; zachowano jego pierwotne położenie.')
+        return False
+    _clear_move()
+    _say('{} moved.'.format(name), 'Przesunięto {}.'.format(name))
+    return True
 
 
 def _jump_to_last():

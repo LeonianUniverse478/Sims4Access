@@ -191,8 +191,9 @@ class RegressionTests(unittest.TestCase):
             show.assert_not_called()
 
     def test_first_popup_deferred_and_scanner_keys_unchanged(self):
-        self.assertNotIn(0x55, keys.CHORDS)
-        self.assertNotIn(0x55, keys._SWALLOW_VKS)
+        # Ctrl+Alt+U was the menu key long ago (now H). Since 2026-11-12 it is
+        # only the Build cursor's layer-up key, never the menu.
+        self.assertEqual(keys.CHORDS[0x55], ('layerup', False))
         original = {0x26: ('prev', True), 0x28: ('next', True),
                     0x25: ('prevcat', True), 0x27: ('nextcat', True),
                     0x21: ('prevsub', True), 0x22: ('nextsub', True),
@@ -211,7 +212,8 @@ class RegressionTests(unittest.TestCase):
              0x4C,                                               # Ctrl+Alt+L logging on/off (2026-09-30)
              0x56,                                               # Ctrl+Alt+V events (2026-09-30)
              0x4D, 0x4B,                                         # Ctrl+Alt+M milestones, K character values (2026-10-04)
-             0x4F, 0x44})                                        # Ctrl+Alt+O catalog tree, D catalog search (2026-10-14)
+             0x4F, 0x49,                                         # Ctrl+Alt+O catalog tree, I catalog search (2026-10-14; moved off D 2026-10-16)
+             0x55, 0x44, 0x4A, 0xBC, 0xBE})                      # U/D layers, J room label, comma/period scanner range (DaRainbowGirlXX, merged 2026-11-12)
         with patch.object(menu, '_show_settings_window') as show:
             zone.Zone().on_loading_screen_animation_finished()
             show.assert_not_called()

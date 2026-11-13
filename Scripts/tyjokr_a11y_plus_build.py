@@ -252,6 +252,64 @@ def move_to(x, y):
     u.mouse_event(0x8001, nx, ny, 0, 0)
 
 
+def screenshot(path, mark=None):
+    """Diagnostics: save the game window's client area as a 24-bit BMP.
+    mark=(x, y) screen pixels draws a small cross there (where the mouse
+    clicks). Returns True when written. Worker thread; never raises."""
+    import ctypes
+    import struct
+    try:
+        class RECT(ctypes.Structure):
+            _fields_ = [("l", ctypes.c_long), ("t", ctypes.c_long), ("r", ctypes.c_long), ("b", ctypes.c_long)]
+
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+        u, g = _user32(), ctypes.windll.gdi32
+        g.CreateCompatibleDC.restype = ctypes.c_void_p
+        g.CreateCompatibleBitmap.restype = ctypes.c_void_p
+        g.SelectObject.restype = ctypes.c_void_p
+        u.GetDC.restype = ctypes.c_void_p
+        hwnd = u.GetForegroundWindow()
+        rc = RECT()
+        u.GetClientRect(hwnd, ctypes.byref(rc))
+        origin = POINT(0, 0)
+        u.ClientToScreen(hwnd, ctypes.byref(origin))
+        w, h = rc.r - rc.l, rc.b - rc.t
+        if w <= 0 or h <= 0:
+            return False
+        screen = u.GetDC(None)
+        mem = g.CreateCompatibleDC(ctypes.c_void_p(screen))
+        bmp = g.CreateCompatibleBitmap(ctypes.c_void_p(screen), w, h)
+        old = g.SelectObject(ctypes.c_void_p(mem), ctypes.c_void_p(bmp))
+        g.BitBlt(ctypes.c_void_p(mem), 0, 0, w, h, ctypes.c_void_p(screen), origin.x, origin.y, 0x00CC0020 | 0x40000000)
+        stride = (w * 3 + 3) & ~3
+        header = struct.pack("<IiiHHIIiiII", 40, w, h, 1, 24, 0, stride * h, 2835, 2835, 0, 0)
+        info = ctypes.create_string_buffer(header + b"\0" * 16)
+        bits = ctypes.create_string_buffer(stride * h)
+        g.GetDIBits(ctypes.c_void_p(mem), ctypes.c_void_p(bmp), 0, h, bits, info, 0)
+        g.SelectObject(ctypes.c_void_p(mem), ctypes.c_void_p(old))
+        g.DeleteObject(ctypes.c_void_p(bmp))
+        g.DeleteDC(ctypes.c_void_p(mem))
+        u.ReleaseDC(None, ctypes.c_void_p(screen))
+        data = bytearray(bits.raw)
+        if mark is not None:
+            mx, my = int(mark[0]) - origin.x, int(mark[1]) - origin.y
+            for d in range(-12, 13):
+                for (px, py) in ((mx + d, my), (mx, my + d), (mx + d, my + 1), (mx + 1, my + d)):
+                    if 0 <= px < w and 0 <= py < h:
+                        o = (h - 1 - py) * stride + px * 3
+                        data[o:o + 3] = b"\x00\x00\xff" if abs(d) > 3 else b"\x00\xff\xff"
+        with open(path, "wb") as f:
+            f.write(struct.pack("<2sIHHI", b"BM", 54 + len(data), 0, 0, 54))
+            f.write(header)
+            f.write(bytes(data))
+        core.log("screenshot {} ({}x{}, mark {})".format(path, w, h, mark))
+        return True
+    except Exception as ex:
+        core.log("screenshot failed: {!r}".format(ex))
+        return False
+
+
 def drag(a, b, shift=False):
     u = _user32()
     (ax, ay), (bx, by) = _to_screen(*a), _to_screen(*b)
@@ -328,12 +386,17 @@ _busy = [False]
 VIEW_FROM = {"north": (0.0, -1.0), "south": (0.0, 1.0), "east": (-1.0, 0.0), "west": (1.0, 0.0)}
 
 
-def _focus_camera(x, z, level, view=None):
+def _focus_camera(x, z, level, view=None, focus_height=None):
     """Center the camera on a point. view=(dx, dz): put the camera on that side of the point,
-    looking at it, so a wall there is seen from the front and is not cut away."""
+    looking at it, so a wall there is seen from the front and is not cut away.
+    focus_height: look at that height above the floor instead of the ground (hanging wall
+    objects: the click is the screen centre, which must be on the wall). The camera
+    itself stays where it was, above the walls."""
     import camera, terrain, sims4.math
     y = terrain.get_terrain_height(x, z) + 3.0 * level
     target = sims4.math.Vector3(x, y, z)
+    if focus_height is not None:
+        target = sims4.math.Vector3(x, floor_height(x, z, level) + focus_height, z)
     if view is None:
         camera.focus_on_position(target)
         return
@@ -365,7 +428,7 @@ def overview_camera(points_world, level=0):
                                          camera_position=sims4.math.Vector3(cx, y + up, tz + up * 0.3))
 
 
-def point_and_act(points_world, level, action, describe, height=0.0, view=None, overview=False):
+def point_and_act(points_world, level, action, describe, height=0.0, view=None, overview=False, focus_height=None):
     """Worker thread only. Center the camera, project the points, do the mouse action.
     Returns True when the action was performed."""
     _hook_replies()
@@ -374,7 +437,7 @@ def point_and_act(points_world, level, action, describe, height=0.0, view=None, 
     if overview:
         core.post(overview_camera, points_world, level)
     else:
-        core.post(_focus_camera, cx, cz, level, view)
+        core.post(_focus_camera, cx, cz, level, view, focus_height)
     time.sleep(1.8)
     screen = None
     for attempt in range(4):
@@ -393,7 +456,7 @@ def point_and_act(points_world, level, action, describe, height=0.0, view=None, 
             core.post(overview_camera, points_world + [(cx, cz + 3.0 * (attempt + 1))], level)
         else:
             _zoom_out(3)
-            core.post(_focus_camera, cx, cz, level, view)
+            core.post(_focus_camera, cx, cz, level, view, focus_height)
         time.sleep(1.5)
     cursor_off()
     if screen is None:
@@ -492,7 +555,7 @@ def undo():
     _send_ui("A11y|build|undo|{}".format(_new_serial()))
 
 
-def run_job(points_world, level, action, describe, verify=None, height=0.0, view=None):
+def run_job(points_world, level, action, describe, verify=None, height=0.0, view=None, focus_height=None):
     """Do one pointing job in a background thread so the game keeps drawing frames."""
     if _busy[0]:
         core.speak("Still working on the last build step.")
@@ -501,7 +564,8 @@ def run_job(points_world, level, action, describe, verify=None, height=0.0, view
 
     def work():
         try:
-            if point_and_act(points_world, level, action, describe, height, view) and verify is not None:
+            if point_and_act(points_world, level, action, describe, height, view,
+                             focus_height=focus_height) and verify is not None:
                 core.post(verify)
         except Exception:
             core.log_exc("build job")
@@ -1123,6 +1187,8 @@ def _flash_reply(encoded=""):
             _cat["quiet"].set()
         else:
             core.post(_show_catalog)
+    elif kind in ("wallsup", "wallsrestored"):
+        core.log("bridge: {} (wall view mode {})".format(kind, parts[1] if len(parts) > 1 else "?"))
     elif kind == "selected":
         name = unquote(parts[2]) if len(parts) > 2 else "item"
         _product["name"] = name

@@ -24,8 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 from source_exchange import checkpoint, inventory  # noqa: E402
 
-WORK = 'work-1.128.90'
-GAME_VERSION = '1.128.90.1030'
+WORK = 'work-1.129.39'
+GAME_VERSION = '1.129.39.1030'
 GFX_TYPE = 0x62ECC59A
 KIT_CLAUDE = Path('docs/development/kit/CLAUDE.md')
 TEXT_SUFFIXES = {'.py', '.md', '.txt', '.json', '.ps1', '.as', '.js', '.java', '.cs', '.tsv', '.cfg', '.ini'}

@@ -1,7 +1,7 @@
 """Catalog tree (2026-10-14): Ctrl+Alt+O opens EA's Buy catalog as native
 pickers (Search, By room, By function, then subcategories, then items), Enter
 picks an item up through the Plus catalog bridge, Escape goes back one level,
-and Ctrl+Alt+D searches. The tree table is generated from EA's
+and Ctrl+Alt+I searches. The tree table is generated from EA's
 BuildBuyNavigation movie (tools/gen_catalog_tree.py)."""
 import unittest
 from unittest.mock import patch
@@ -81,7 +81,8 @@ class CatalogTests(unittest.TestCase):
 
     def test_chords(self):
         self.assertEqual(keys.CHORDS[0x4F], ('catalog', False))
-        self.assertEqual(keys.CHORDS[0x44], ('catalogfind', False))
+        self.assertEqual(keys.CHORDS[0x49], ('catalogfind', False))
+        self.assertEqual(keys.CHORDS[0x44], ('layerdown', False), 'Ctrl+Alt+D lowers the Build cursor layer')
         self.assertNotIn(0x4E, keys.CHORDS, "Ctrl+Alt+N is NVDA's own key")
 
     def test_needs_build_mode(self):

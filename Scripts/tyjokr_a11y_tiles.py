@@ -273,10 +273,17 @@ def walls(f, i, j, level):
     return result
 
 
-def doors(f, i, j, level):
-    """{direction: door object} for doors on this tile's edges."""
+def snapshot(level):
+    """The lot's objects on one floor, listed once, for callers that check
+    several tiles or edges (tyjokr's October 1 interface)."""
+    return list(_lot_objects(level))
+
+
+def doors(f, i, j, level, objects=None):
+    """{direction: door object} for doors on this tile's edges. objects is an
+    optional snapshot(level) to search instead of listing the lot again."""
     result = {}
-    for obj in _lot_objects(level):
+    for obj in (objects if objects is not None else _lot_objects(level)):
         if not is_door(obj):
             continue
         try:

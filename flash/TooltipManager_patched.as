@@ -138,6 +138,7 @@ package olympus.core
       // TS4 Access Plus catalog bridge (merged 2026-10-08): the products of the
       // last listed catalog category, and whether build errors are forwarded.
       protected var mA11yPlusProducts:Array = new Array();
+      protected var mA11yWallModeSaved:int = -1;
       protected var mA11yPlusListening:Boolean = false;
       // Guided New Game (2026-10-13): the step the guide is on during a new
       // family's CAS ("" waiting, "skip" not offered here, "open" a guide
@@ -411,8 +412,17 @@ package olympus.core
                CommunicationManager.SendUIMessage("BBInspectorHideMoveToolPanel");
                result = "ok";
             }
+            else
+            {
+               // Which condition refused, for the log (2026-10-16: a wall
+               // object was refused after a floor object had been placed).
+               this.A11yBuildLog("hand drop denied: controls=" + this.mA11yBuildControls + " keyboard=" + this.mA11yKeyboard +
+                  " lease=" + (getTimer() <= this.mA11yKeyboardLease) + " hud=" + this.A11yWorldHudMode() +
+                  " blocked=" + this.A11yBuildBlocked() + " tool=" + this.A11yBuildToolAllowed() +
+                  " top=" + getQualifiedClassName(this.A11yTopModalWidget()));
+            }
          }
-         catch(e:Error) { result = "denied"; }
+         catch(e:Error) { result = "denied"; this.A11yBuildLog("hand drop error=" + e.message); }
          this.A11yPostToPython("a11y.buildhand",serial + "|" + result);
       }
 
@@ -3021,7 +3031,7 @@ package olympus.core
             // The Build cursor: arrows, Enter, Space, Backspace, Escape, Page
             // Up/Down, Home, Delete, 1-6 and R are its keys while it owns
             // input; ownership is re-derived at the key, as for the scanner.
-            if(this.mA11yBuildGridOn && [8,13,27,32,33,34,36,37,38,39,40,46,49,50,51,52,53,54,82].indexOf(key) >= 0)
+            if(this.mA11yBuildGridOn && [8,13,27,32,33,34,36,37,38,39,40,46,49,50,51,52,53,54,77,82].indexOf(key) >= 0)
             {
                this.A11yModalFrame();
                if(this.A11yBuildGridOwner()) { return true; }
@@ -3777,6 +3787,8 @@ package olympus.core
             if(cmd == "ping") { this.A11yPlusReply("pong"); }
             else if(cmd == "catalog" && parts.length >= 6) { this.A11yPlusCatalog(int(parts[3]),String(parts[4]),String(parts[5])); }
             else if(cmd == "select" && parts.length >= 4) { this.A11yPlusSelect(int(parts[3])); }
+            else if(cmd == "wallsup") { this.A11yWallsUp(); }
+            else if(cmd == "wallsrestore") { this.A11yWallsRestore(); }
             else if(cmd == "browse" && parts.length >= 8) { this.A11yCatalogBrowse(int(parts[3]),String(parts[4]),String(parts[5]),String(parts[6]),decodeURIComponent(String(parts[7]))); }
          }
          catch(e:Error) { this.A11yPlusReply("error|" + e.message); }
@@ -3861,6 +3873,28 @@ package olympus.core
       // single hash with GetTagValueFromHash. A search is the Buy panel's open
       // search (BuildBuyNavigationMain.OnSearch): searchResult.devString, sorted
       // by SEARCHGROUP_OPENSEARCH_SORT. Replies and selection are A11yPlusCatalog's.
+      // Walls up while EA's Build tool hangs a wall object (tyjokr_a11y_wall,
+      // 2026-10-16): with walls down or cut away, a click at hanging height
+      // passes over the drawn wall stub ("Must be placed on a wall"). EA's own
+      // Home/End cycle (CenterInputAdapterBase.CycleWallViewMode) uses
+      // BBGetWallMode and BBSetWallMode; WallViewMode.WALLS_UP is 2. The
+      // player's mode is saved once and restored after the click.
+      public function A11yWallsUp() : void
+      {
+         var mode:Object = CommunicationManager.CallGameService("BBGetWallMode");
+         if(this.mA11yWallModeSaved < 0 && mode != null) { this.mA11yWallModeSaved = int(mode); }
+         CommunicationManager.CallGameService("BBSetWallMode",2);
+         this.A11yPlusReply("wallsup|" + String(mode));
+      }
+
+      public function A11yWallsRestore() : void
+      {
+         if(this.mA11yWallModeSaved < 0) { return; }
+         CommunicationManager.CallGameService("BBSetWallMode",this.mA11yWallModeSaved);
+         this.A11yPlusReply("wallsrestored|" + this.mA11yWallModeSaved);
+         this.mA11yWallModeSaved = -1;
+      }
+
       public function A11yCatalogTags(names:String) : Array
       {
          var categories:Object = getDefinitionByName("gamedata.BuildBuy.constants.FilterCategories");

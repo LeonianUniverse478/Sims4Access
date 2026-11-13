@@ -31,6 +31,14 @@ DEFAULTS = {
     'travel_list': True,      # keyboard mode answers travel requests from a world/place list instead of the map
     'build_controls': True,   # object placement from the lot grid in Build mode, read-only grid in Live
     'scanner_mode': False,    # plain arrows browse the scanner; arrows never move the camera
+    'scanner_range': '40 meters',  # Ctrl+Alt+comma/period: 6/12/24/40 meters, whole lot, this floor, this room
+    # Build cursor (contributed by DaRainbowGirlXX): target-layer focus and
+    # experimental placement on bare ground, water, ceilings and fences
+    'surface_layer_focus': True,
+    'experimental_bare_ground': True,
+    'experimental_water': True,
+    'experimental_ceiling': True,
+    'experimental_fence': True,
     'braille_mode': 'concise',  # concise | full | only | off
     'logging': False,         # mod-debugging log
     'speech_mode': 'hover',   # hover | manual | beeps | off
@@ -70,6 +78,19 @@ _FILE_MAP = {
     ('features', 'travel list'): 'travel_list',
     ('features', 'build controls'): 'build_controls',
     ('features', 'scanner mode'): 'scanner_mode',
+    ('features', 'scanner range'): 'scanner_range',
+    ('build cursor', 'layer focus'): 'surface_layer_focus',
+    ('build cursor', 'bare ground'): 'experimental_bare_ground',
+    ('build cursor', 'water'): 'experimental_water',
+    ('build cursor', 'ceiling'): 'experimental_ceiling',
+    ('build cursor', 'fence'): 'experimental_fence',
+    # legacy: the contribution's own section (October 2026), still read
+    ('contribution', 'scanner scope'): 'scanner_range',
+    ('contribution', 'surface layer focus'): 'surface_layer_focus',
+    ('contribution', 'experimental bare ground'): 'experimental_bare_ground',
+    ('contribution', 'experimental water'): 'experimental_water',
+    ('contribution', 'experimental ceiling'): 'experimental_ceiling',
+    ('contribution', 'experimental fence'): 'experimental_fence',
     ('speech', 'mode'): 'speech_mode',
     ('speech', 'braille'): 'braille_mode',
     ('speech', 'verbosity'): 'verbosity',
@@ -83,7 +104,11 @@ _FILE_MAP = {
 _BOOL_KEYS = ('numpad_navigation', 'sim_actions', 'object_names', 'keyboard',
               'simplified_menus', 'scanner',
               'captions', 'startup', 'travel_list', 'build_controls',
-              'scanner_mode', 'logging', 'auto_focus')
+              'scanner_mode', 'logging', 'auto_focus', 'surface_layer_focus',
+              'experimental_bare_ground', 'experimental_water', 'experimental_ceiling',
+              'experimental_fence')
+SCANNER_RANGES = ('6 meters', '12 meters', '24 meters', '40 meters',
+                  'whole lot', 'this floor', 'this room')
 
 _TEMPLATE = """# TS4 Access options. Edit in any text editor, then type a11y.reload in
 # the cheat console (or restart the game). Delete this file to reset.
@@ -99,6 +124,9 @@ scanner = {scanner}
 # Scanner mode, Live mode only: plain arrows browse the scanner instead of moving
 # the camera, and the camera follows the active Sim. Ctrl+Alt+Space switches it (on/off)
 scanner mode = {scanner_mode}
+# Scanner range, also Ctrl+Alt+comma and Ctrl+Alt+period: 6 meters, 12 meters,
+# 24 meters, 40 meters, whole lot, this floor or this room
+scanner range = {scanner_range}
 # With the keyboard, choose travel destinations from a list, not the map (on/off)
 travel list = {travel_list}
 # Read the names of objects under the mouse (on/off)
@@ -111,6 +139,17 @@ startup speech = {startup}
 numpad navigation = {numpad_navigation}
 # Place Build catalog objects from the lot grid in Build mode (on/off)
 build controls = {build_controls}
+
+[build cursor]
+# Ctrl+Alt+U and Ctrl+Alt+D choose a target layer (ground, six wall heights,
+# ceiling); number 1 focuses objects on it and number 4 names each nearby
+# object's layer (on/off)
+layer focus = {surface_layer_focus}
+# Experimental placement; the game's own placement test still decides (on/off)
+bare ground = {experimental_bare_ground}
+water = {experimental_water}
+ceiling = {experimental_ceiling}
+fence = {experimental_fence}
 
 [speech]
 # hover, manual, beeps or off
@@ -192,6 +231,13 @@ def _apply_value(key, raw):
         value = _parse_bool(raw, key)
         if value is not None:
             _stored[key] = value
+        return
+    if key == 'scanner_range':
+        name = ' '.join(raw.lower().split()).replace('metres', 'meters')
+        if name in SCANNER_RANGES:
+            _stored[key] = name
+        else:
+            load_errors.append('unknown scanner range "{}"; keeping default'.format(raw))
         return
     if key == 'speech_mode':
         mode = raw.lower().replace('-', '_').replace(' ', '_')
@@ -315,6 +361,12 @@ def _render(stored):
         'travel_list': 'on' if sget('travel_list') else 'off',
         'build_controls': 'on' if sget('build_controls') else 'off',
         'scanner_mode': 'on' if sget('scanner_mode') else 'off',
+        'scanner_range': sget('scanner_range'),
+        'surface_layer_focus': 'on' if sget('surface_layer_focus') else 'off',
+        'experimental_bare_ground': 'on' if sget('experimental_bare_ground') else 'off',
+        'experimental_water': 'on' if sget('experimental_water') else 'off',
+        'experimental_ceiling': 'on' if sget('experimental_ceiling') else 'off',
+        'experimental_fence': 'on' if sget('experimental_fence') else 'off',
         'speech_mode': str(sget('speech_mode')),
         'braille_mode': sget('braille_mode'),
         'verbosity': sget('verbosity'),

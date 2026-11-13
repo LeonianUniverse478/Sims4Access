@@ -272,8 +272,8 @@ def requirement(def_id):
 
 
 _NEEDS = {
-    'wall': ('It hangs on a wall. Wall placement is not available from the grid yet.',
-             'To wisi na ścianie. Umieszczanie na ścianie nie jest jeszcze dostępne z siatki.'),
+    'wall': ('It hangs on a wall. Use the Build cursor, Control Alt B, to hang it.',
+             'To wisi na ścianie. Użyj kursora budowania, Control Alt B, aby to powiesić.'),
     'ceiling': ('It hangs from a ceiling. Ceiling placement is not available from the grid yet.',
                 'To wisi pod sufitem. Umieszczanie pod sufitem nie jest jeszcze dostępne z siatki.'),
     'fence': ('It attaches to a fence. Fence placement is not available from the grid yet.',
@@ -439,7 +439,7 @@ def tile_key(position, level):
 
 # -------------------------------------------------------------------- actions
 
-def _checks(position, level, key, guard):
+def _checks(position, level, key, guard, exact=False):
     """Everything that can refuse before an object exists. Speaks the refusal;
     returns (item, price, need) or None."""
     item = product()
@@ -457,7 +457,12 @@ def _checks(position, level, key, guard):
               item['name'] or _product_name(), '.'])
         return None
     need = requirement(item['id'])
-    if need in _NEEDS:
+    # Bare ground, water, ceiling and fence objects go through here only from
+    # the Build cursor's experimental placement (tyjokr_a11y_surfaces), with
+    # exact=True, so the game's own placement test still decides.
+    import tyjokr_a11y_surfaces as surfaces
+    experimental = exact and surfaces.handles(need)
+    if need in _NEEDS and not experimental:
         _say_text(*_NEEDS[need])
         return None
     try:
@@ -481,7 +486,7 @@ def _checks(position, level, key, guard):
         if not services.active_lot().is_position_on_lot(position):
             _say_text('That point is not on this lot.', 'Ten punkt nie należy do tej parceli.')
             return None
-        if build_buy.is_location_pool(position, level):
+        if build_buy.is_location_pool(position, level) and not (experimental and need == 'water'):
             _say_text('That point is in a pool.', 'Ten punkt jest w basenie.')
             return None
     except Exception as ex:
@@ -504,7 +509,7 @@ def place(position, level, routing_surface, angle=0.0, exact=False):
         _say_text('Still placing the last one.', 'Trwa umieszczanie poprzedniego obiektu.')
         return False
     settle_owed()
-    if _checks(position, level, key, guard=True) is None:
+    if _checks(position, level, key, guard=True, exact=exact) is None:
         return False
     _pending['serial'] += 1
     serial = _pending['serial']
@@ -565,7 +570,7 @@ def acknowledged(serial, ok):
 
 
 def _execute(position, level, routing_surface, angle, key, exact=False):
-    checked = _checks(position, level, key, guard=False)
+    checked = _checks(position, level, key, guard=False, exact=exact)
     if checked is None:
         return False
     item, price, need = checked

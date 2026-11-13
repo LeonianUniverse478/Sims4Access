@@ -145,7 +145,7 @@ class CursorTests(unittest.TestCase):
         self.place.in_build_mode.return_value = True
         self.place.product.return_value = {'id': 7, 'name': 'Cheap Bed', 'zone': 1}
         self.place.requirement.return_value = None
-        self.place._NEEDS = {'wall': ('It hangs on a wall.', 'pl')}
+        self.place._NEEDS = {'wall': ('It hangs on a wall.', 'pl'), 'unknown': ('The game did not say.', 'pl')}
         self.spoken, self.sent = [], []
         self.fits = {}
         patches = [
@@ -161,7 +161,12 @@ class CursorTests(unittest.TestCase):
             patch.object(tiles, 'walls', return_value={0: 'wall', 1: 'open', 2: 'open', 3: 'open'}),
             patch.object(tiles, 'doors', return_value={}),
             patch.object(tiles, 'ground', return_value={'floor': True, 'outside': False}),
-            patch.object(tiles, 'room', return_value=1),
+            # Each tile its own room, as on either side of a real interior wall. The
+            # wall contribution (2026-10-16) names a blocked edge "wall" only when
+            # it separates two rooms; between two tiles of one room it says
+            # "wall or fence" (tools/test_contribution.py).
+            patch.object(tiles, 'room', side_effect=lambda f, i, j, level: (i, j)),
+            patch.object(tiles, 'snapshot', return_value=[]),
             patch.object(tiles, 'fit_at', side_effect=lambda f, d, i, j, level, facing, obj=None:
                          self.fits.get((i, j, facing), (None, 'a wall is in the way'))),
             patch.object(tiles, 'nearest_fit', return_value=(6, 4, 'spot', 1)),
@@ -236,9 +241,13 @@ class CursorTests(unittest.TestCase):
         with patch.object(grid, 'cursor', return_value=('centre', 0, 1)):
             grid.on_key('place')
         self.place.place.assert_called_once_with('centre', 0, 'surface')
-        self.place.requirement.return_value = 'wall'
+        # Wall objects were refused here until the wall contribution
+        # (2026-10-16); they now go to the selected wall's anchor and the
+        # game's exact validator (tools/test_contribution.py). Only an object
+        # the game will not place still refuses.
+        self.place.requirement.return_value = 'unknown'
         grid.on_key('place')
-        self.place._say_text.assert_called_once_with('It hangs on a wall.', 'pl')
+        self.place._say_text.assert_called_once_with('The game did not say.', 'pl')
 
     def test_no_product_says_how_to_choose_one(self):
         self.place.product.return_value = None

@@ -60,6 +60,19 @@ ROWS = [
         help='plain arrows browse the scanner and never move the camera; Control Alt Space toggles'),
     Row('build_controls', 'bool', 'build controls',
         help='place Build catalog objects from the lot grid in Build mode with Control Alt B; read-only lot grid in Live mode'),
+    Row('scanner_range', 'choice', 'scanner range', choices=('6 meters', '12 meters', '24 meters', '40 meters',
+                                                               'whole lot', 'this floor', 'this room'),
+        help='how far the scanner looks; Control Alt comma and Control Alt period change it'),
+    Row('surface_layer_focus', 'bool', 'layer focus',
+        help='Build cursor: Control Alt U and D choose a layer; number 1 focuses objects on it, number 4 names nearby layers'),
+    Row('experimental_bare_ground', 'bool', 'experimental bare-ground placement',
+        help='Build cursor: needs natural ground; the game still checks the spot'),
+    Row('experimental_water', 'bool', 'experimental water placement',
+        help='Build cursor: needs detected water; the game still checks the spot'),
+    Row('experimental_ceiling', 'bool', 'experimental ceiling placement',
+        help='Build cursor: uses a sampled ceiling point; the game still checks the spot'),
+    Row('experimental_fence', 'bool', 'experimental fence placement',
+        help='Build cursor: uses the edge you face; the game still checks the spot'),
     Row('logging', 'bool', 'logging',
         help='diagnostic log next to the ts4script'),
     Row('sapi_rate', 'number', 'voice rate', lo=-10, hi=10, step=1,
@@ -213,6 +226,10 @@ def _apply(row, value):
         speech.restart_sapi()
     elif key == 'tooltip_delay':
         settings.set(key, float(value))
+    elif key == 'scanner_range':
+        settings.set(key, value)
+        import tyjokr_a11y_scanner as scanner
+        scanner.apply_range_setting()
     else:
         settings.set(key, bool(value) if row.kind == 'bool' else value)
 

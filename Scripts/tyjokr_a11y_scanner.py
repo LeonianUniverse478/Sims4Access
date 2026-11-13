@@ -58,7 +58,7 @@ import tyjokr_a11y_availability as availability
 REF_OBJECT = 0xA11E5CA1
 REF_SIM = 0xA11E5CA2
 
-MAX_DISTANCE = 40.0        # metres; Sims are always listed regardless
+MAX_DISTANCE = 40.0        # metres: the default scanner range (RANGES); Sims are always listed
 _LOC_TIMEOUT = 0.6         # seconds to wait for the client before speaking without a name
 
 SIMS = 'SIMS'
@@ -509,6 +509,136 @@ def _subs_in(entries):
     return seen
 
 
+# ------------------------------------------------------------ scanner range
+#
+# Contributed by DaRainbowGirlXX (2026-10-16): Ctrl+Alt+comma and
+# Ctrl+Alt+period step through these ranges; the choice is saved. Metre
+# ranges still list every Sim, as the scanner always has. The lot, floor and
+# room ranges keep only things on the active lot (and on the active Sim's
+# floor, or in its room).
+RANGES = (
+    ('6 meters', 6.0, 'distance'),
+    ('12 meters', 12.0, 'distance'),
+    ('24 meters', 24.0, 'distance'),
+    ('40 meters', 40.0, 'distance'),
+    ('whole lot', None, 'lot'),
+    ('this floor', None, 'floor'),
+    ('this room', None, 'room'),
+)
+RANGE_NAMES = tuple(name for name, _limit, _kind in RANGES)
+
+
+def _range():
+    wanted = str(settings.get('scanner_range', '40 meters') or '').strip().lower()
+    return next((mode for mode in RANGES if mode[0] == wanted), RANGES[3])
+
+
+def _range_limit():
+    limit = _range()[1]
+    return limit if limit is not None else 1000000.0
+
+
+def _object_for_entry(entry):
+    try:
+        import services
+        obj = services.object_manager().get(entry.obj_id)
+        if obj is not None:
+            return obj
+        info = services.sim_info_manager().get(entry.obj_id)
+        if info is not None:
+            return info.get_sim_instance()
+    except Exception:
+        return None
+
+
+def _on_active_lot(obj):
+    try:
+        import services
+        return bool(services.active_lot().is_position_on_lot(obj.position))
+    except Exception:
+        return False
+
+
+def _room_id(obj):
+    try:
+        import build_buy
+        import services
+        return build_buy.get_room_id(services.current_zone_id(), obj.position,
+                                     int(getattr(obj, 'level', 0) or 0))
+    except Exception:
+        return None
+
+
+def _in_range(entry, active_room):
+    _name, limit, kind = _range()
+    if limit is not None:
+        return bool(getattr(entry, 'is_sim', False)) or entry.distance <= limit
+    obj = _object_for_entry(entry)
+    if obj is None:
+        return entry.distance == 0
+    if not _on_active_lot(obj):
+        return False
+    if kind == 'lot':
+        return True
+    if kind == 'floor':
+        return entry.level_delta == 0
+    if entry.level_delta != 0 or active_room is None:
+        return False
+    return _room_id(obj) == active_room
+
+
+def _apply_range():
+    """Filter the fresh lists to the chosen range, inside _scan, so the
+    scanner's own focus restore runs on the filtered lists."""
+    if _range()[1] is not None:
+        return      # metre ranges were applied while collecting
+    active_room = None
+    if _range()[2] == 'room':
+        try:
+            import services
+            active_room = _room_id(services.get_active_sim())
+        except Exception:
+            active_room = None
+    for key in list(_by_group):
+        kept = [entry for entry in _by_group[key] if _in_range(entry, active_room)]
+        if kept:
+            _by_group[key] = kept
+        else:
+            del _by_group[key]
+
+
+def cycle_range(delta):
+    """Ctrl+Alt+comma / period. Simulation thread."""
+    names = list(RANGE_NAMES)
+    index = names.index(_range()[0])
+    name = names[(index + (1 if delta > 0 else -1)) % len(names)]
+    settings.set('scanner_range', name)
+    speech.log_line('scanner: range {}'.format(name))
+    try:
+        import services
+        has_sim = services.get_active_sim() is not None
+    except Exception:
+        has_sim = False
+    if not has_sim:
+        speech.speak(lang.t('no lot loaded'), explicit=True)
+        return False
+    found = _scan(preserve=True)
+    parts = ['Scanner range: {}. '.format(name)]
+    parts.extend(_tree_parts() if found else ['Nothing in this range. '])
+    _speak_parts(parts)
+    return True
+
+
+def apply_range_setting():
+    """The settings menu changed the range: refresh a live scanner list."""
+    try:
+        if enabled() and _groups:
+            _scan(preserve=True)
+    except Exception as ex:
+        speech.log_line('scanner: range refresh failed: {!r}'.format(ex))
+
+
+
 def _scan(preserve=False):
     """Rebuild the lists around the active Sim. Simulation thread only."""
     global _by_group, _groups, _group_index, _item_index, _origin_level
@@ -561,6 +691,7 @@ def _scan(preserve=False):
     except Exception as ex:
         speech.log_line('scanner: object listing failed: {!r}'.format(ex))
         objects = []
+    limit = _range_limit()
     candidates = []
     for obj in objects:
         examined += 1
@@ -572,7 +703,7 @@ def _scan(preserve=False):
             pos = obj.position
             dx = float(pos.x) - float(origin.x)
             dz = float(pos.z) - float(origin.z)
-            if dx * dx + dz * dz > MAX_DISTANCE * MAX_DISTANCE:
+            if dx * dx + dz * dz > limit * limit:
                 continue
             in_range += 1
             checker = getattr(obj, 'is_in_inventory', None)
@@ -596,7 +727,7 @@ def _scan(preserve=False):
                 continue
             entry = _entry_for(obj, origin, _origin_level, False, MISC, MISC)
             entry.availability = verdict
-            if entry.distance > MAX_DISTANCE:
+            if entry.distance > limit:
                 continue
             entry.category, entry.group, names, flags = _classification(obj, _last_scan)
             _by_group.setdefault(entry.group, []).append(entry)
@@ -613,6 +744,7 @@ def _scan(preserve=False):
             continue
     for entries in _by_group.values():
         entries.sort(key=lambda e: (_SUB_RANK.get(e.category, 1 << 20), e.distance))
+    _apply_range()
     # Sims first (the active Sim is first inside), then the catalog's order.
     _groups = [key for key in buycat.GROUP_ORDER if _by_group.get(key)]
     summary = ' '.join('{}:{}/{}'.format(key, len(_by_group[key]),
@@ -1150,6 +1282,8 @@ def _dispatch(intent):
         _do_where()
     elif intent == 'back':
         _tree_back()
+    elif intent in ('scopeprev', 'scopenext'):
+        cycle_range(1 if intent == 'scopenext' else -1)
     else:
         speech.log_line('scanner: unknown intent {!r}'.format(intent))
 
