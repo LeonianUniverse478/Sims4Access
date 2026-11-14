@@ -259,7 +259,7 @@ def _process(decoded, channel='?'):
             seen.add(seg)
             # Flash posts bare lowercase tokens for the mod's OWN vocabulary
             # (game text arrives already localized); translate them here.
-            if seg in ('checked', 'unchecked', 'increase', 'decrease', 'phone', 'action unavailable'):
+            if seg in ('checked', 'unchecked', 'increase', 'decrease', 'phone', 'action unavailable', 'no event goals', 'event goals unavailable'):
                 seg = lang.t(seg)
             else:
                 seg = _own_phrase(seg)

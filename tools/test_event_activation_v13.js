@@ -55,7 +55,7 @@ test('A text-less PhoneButton is announced with the phone token, after the map l
 });
 test('Narrator translates both new tokens',()=>{
  const py=fs.readFileSync(path.join(__dirname,'../Scripts/tyjokr_a11y_narrator.py'),'utf8');
- assert(/seg in \('checked', 'unchecked', 'increase', 'decrease', 'phone', 'action unavailable'\)/.test(py));
+ assert(/seg in \('checked', 'unchecked', 'increase', 'decrease', 'phone', 'action unavailable'/.test(py));
 });
 
 const toggleCell=method('A11yPickerToggleCell');

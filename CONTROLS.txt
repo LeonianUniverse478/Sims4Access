@@ -141,6 +141,8 @@ Ctrl+Alt+H: Open the accessibility menu.
 Choose Keyboard shortcuts in that menu to hear the controls.
 Ctrl+Shift+N: Read needs.
 Ctrl+Alt+L: Turn diagnostic logging on or off (TS4_Access.log next to the mod).
+V: Browse the current event's goals in Live mode. Use Up or Down to read each
+goal and Escape to return. While this shortcut owns V, it replaces video recording.
 Ctrl+Alt+V: Running events. Enter on one to send all guests home and end it,
 end it, or send all guests home. Your household is never sent away.
 Ctrl+Alt+M: Milestones of the active Sim (Growing Together). Enter on a

@@ -57,6 +57,7 @@ class ShortcutTests(unittest.TestCase):
 
     def test_all_plain_bindings_and_alternatives_are_included(self):
         rows = shortcuts.sections(numpad=False)[0][1]
+        rows.remove(shortcuts.lang.t('shortcut event goals'))
         # Shift + Tab and Control + Shift + N, plus the Simplified menus line
         # while that setting is on (the default).
         extra = 3 if env.settings.get('simplified_menus', True) else 2
