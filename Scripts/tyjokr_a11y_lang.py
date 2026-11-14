@@ -1135,6 +1135,11 @@ _TRANSLATIONS.update({
                         'World scanner shortcuts require the scanner setting. Grid and Build cursor modes change the arrow and action keys as described below'},
 })
 
+_TRANSLATIONS.update({
+    'servings count': {'en': 'servings: {}'},
+    'quality stars': {'en': 'quality in stars: {}'},
+})
+
 _locale_lang = None
 
 _TRANSLATIONS['scanner unavailable'] = {

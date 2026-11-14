@@ -1,8 +1,37 @@
 """Tree navigation scenarios with game, keyboard and speech mocked offline."""
 import unittest
+import sys
+from types import SimpleNamespace
+from unittest.mock import Mock
 from unittest.mock import patch
 import test_feedback_v9 as fixture
 import tyjokr_a11y_scanner as scanner
+
+
+class ServingTests(unittest.TestCase):
+    def test_only_catalog_names_use_the_standalone_form(self):
+        forms = '{Y.Plates}{P.Plates}{S.Plate}'
+        with patch.dict(scanner._loc_cache, {7: forms}), patch.object(scanner.speech, 'speak') as speak:
+            scanner._speak_parts([('catalog', 7), ' / ', ('loc', 7)])
+            speak.assert_called_once_with('Plate / ' + forms, source='widget')
+        for value in ('{S.Plate}', '{S.A}{Y.B}', '{S.A}{S.B}{Y.C}{P.D}'):
+            self.assertEqual(scanner._catalog_name(value), value)
+
+    def test_servings_and_optional_quality(self):
+        tuning = SimpleNamespace(SERVINGS_STATISTIC='servings', QUALITY_STATE='quality',
+                                 QUALITY_STATE_VALUE_MAP={'great': SimpleNamespace(state_star_number=3)})
+        obj = Mock(crafting_component=True)
+        tracker = obj.get_tracker.return_value
+        tracker.get_value.return_value = 0
+        obj.get_state.return_value = 'great'
+        with patch.dict(sys.modules, {'crafting.crafting_tunable': SimpleNamespace(CraftingTuning=tuning)}), \
+                patch.object(scanner.lang, '_locale_lang', 'en'):
+            self.assertEqual(scanner._serving_details(obj), ', servings: 0, quality in stars: 3')
+            obj.has_state.return_value = False
+            self.assertEqual(scanner._serving_details(obj), ', servings: 0')
+            tracker.has_statistic.return_value = False
+            self.assertEqual(scanner._serving_details(obj), '')
+            self.assertEqual(scanner._serving_details(None), '')
 
 
 class TreeTests(unittest.TestCase):
