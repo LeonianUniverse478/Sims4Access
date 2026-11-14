@@ -59,7 +59,8 @@ class ShortcutTests(unittest.TestCase):
         rows = shortcuts.sections(numpad=False)[0][1]
         # Shift + Tab and Control + Shift + N, plus the Simplified menus line
         # while that setting is on (the default).
-        extra = 3 if env.settings.get('simplified_menus', True) else 2
+        self.assertIn(shortcuts.lang.t('shortcut store'), rows)
+        extra = 4 if env.settings.get('simplified_menus', True) else 3
         self.assertEqual(len(rows), sum(len(combos) for _, combos in env.keys.BINDINGS.values()) + extra)
         for label, _ in env.keys.BINDINGS.values():
             self.assertTrue(any(label in row for row in rows), label)
