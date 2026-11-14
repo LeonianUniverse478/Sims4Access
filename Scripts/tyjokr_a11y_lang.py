@@ -1126,6 +1126,9 @@ _TRANSLATIONS.update({
                                   'Space ticks a multiple choice, then Done confirms; Escape goes back',
                             'pl': 'Uproszczone menu są włączone: strzałki w górę i w dół albo Tab przechodzą o jedną opcję; Enter wybiera dostępną opcję pojedynczego wyboru; '
                                   'Spacja zaznacza opcję wielokrotnego wyboru, a potem Gotowe zatwierdza; Escape cofa'},
+    'no event goals': {'en': 'No active event with goals.'},
+    'event goals unavailable': {'en': 'Event goals are unavailable.'},
+    'shortcut event goals': {'en': 'V: browse event goals'},
     'shortcut needs': {'en': 'Control + Shift + N: open Needs when no panel or text field owns focus'},
     'shortcut controls': {'en': 'UI controls'},
     'shortcut chords': {'en': 'Hold Control and Alt for these shortcuts'},

@@ -3118,6 +3118,94 @@ package olympus.core
          };
       }
 
+      public function A11yEventGoalShortcutValid() : Boolean
+      {
+         try
+         {
+            if(!this.mA11yKeyboard || getTimer() > this.mA11yKeyboardLease ||
+               this.mA11yStartupActive || this.A11yWorldHudMode() != 1 || this.A11yEditing()) { return false; }
+            this.A11yModalFrame();
+            return !this.A11yIsLive(this.mA11yActiveModalRoot) &&
+               !this.A11yIsModalScope(this.mA11yScope) &&
+               !this.A11yIsModalScope(this.mA11yPendingScope);
+         }
+         catch(e:Error) { }
+         return false;
+      }
+
+      public function A11yOpenEventGoals() : Boolean
+      {
+         var widget:Object = null;
+         var tabs:Object = null;
+         var selected:Object = null;
+         try
+         {
+            if(!this.A11yEventGoalShortcutValid())
+            {
+               return false;
+            }
+            widget = this.A11yLoadedWidget("SituationDisplay");
+            if(this.A11yIsLive(widget as DisplayObject))
+            {
+               tabs = widget["mcCommonTabDisplay"];
+               if(tabs == null || tabs["GetActiveSituationCount"]() == 0)
+               {
+                  tabs = widget["mcLiveEventsTabDisplay"];
+               }
+               if(tabs != null && tabs["GetActiveSituationCount"]() > 0)
+               {
+                  if(!tabs["IsSelected"]())
+                  {
+                     selected = tabs["GetPersistedContentPanel"]();
+                     if(selected == null)
+                     {
+                        selected = tabs["GetFirstContentPanel"]();
+                     }
+                     if(selected != null)
+                     {
+                        tabs["OpenContentPanelOfDisplayType"](selected["displayType"],selected["situationIndex"]);
+                     }
+                  }
+                  this.mA11yStatusScope = tabs as DisplayObject;
+                  this.A11yFocusInto(this.mA11yStatusScope);
+                  return false;
+               }
+            }
+            this.A11yPostToPython("a11y.speak_enc",encodeURIComponent("0|0|no event goals"));
+         }
+         catch(e:Error)
+         {
+            this.A11yPostToPython("a11y.speak_enc",encodeURIComponent("0|0|event goals unavailable"));
+         }
+         return false;
+      }
+
+      public function A11yCollectEventGoals(item:DisplayObject, result:Array, depth:int) : void
+      {
+         if(item == null || !item.visible || item.alpha <= 0.01 || depth > 40 || result.length > 4096)
+         {
+            return;
+         }
+         var className:String = getQualifiedClassName(item);
+         if(className == "widgets.Gameplay.SituationDisplay.controls::SituationGoalCellView" ||
+            className == "widgets.Gameplay.SituationDisplay.controls::HolidaySituationGoalCellView" ||
+            className == "widgets.Gameplay.SituationDisplay.controls::ScenarioGoalCellView" ||
+            className == "widgets.Gameplay.SituationDisplay.controls::SituationGoalIconContainer" ||
+            className == "widgets.Gameplay.SituationDisplay.controls::SituationMajorGoalIconContainer")
+         {
+            result.push(item);
+            return;
+         }
+         var container:DisplayObjectContainer = item as DisplayObjectContainer;
+         if(container != null)
+         {
+            for(var i:int = 0; i < container.numChildren; i = i + 1)
+            {
+               this.A11yCollectEventGoals(container.getChildAt(i),result,depth + 1);
+            }
+         }
+      }
+
       public function A11yInstallKeyGuards() : void
       {
          var actionClass:Object = null;
@@ -3148,6 +3236,12 @@ package olympus.core
                }
                i = i + 1;
             }
+            action = actionClass["WhenTriggered"](triggerClass["FromKeyBinding"](86,0));
+            action["SetPriority"](1000000);
+            action["AllowWhileModalOpen"](false);
+            action["SetValidCheck"](this.A11yEventGoalShortcutValid);
+            action["CallFunction"](this.A11yOpenEventGoals);
+            if(manager["RegisterAction"](action)) { this.mA11yNativeActions.push(action); }
             this.A11yPostToPython("a11y.mark","keyboard-native-guards-" + this.mA11yNativeActions.length);
          }
          catch(e:Error) { this.A11yPostToPython("a11y.mark","keyboard-guard-error"); }
@@ -4974,6 +5068,11 @@ package olympus.core
             return;
          }
          _loc7_ = getQualifiedClassName(param1);
+         if(param1 == this.mA11yStatusScope && _loc7_.indexOf("widgets.Gameplay.SituationDisplay.controls::") == 0)
+         {
+            this.A11yCollectEventGoals(param1,param2,0);
+            return;
+         }
          if(_loc7_ == "widgets.GameEntry.WorldSelection.SeasonSelect::SeasonSelectContainer")
          {
             var seasons:Array = ["btnSpring","btnSummer","btnFall","btnWinter"];
@@ -5465,7 +5564,13 @@ package olympus.core
             if(this.mA11yPendingScope == null || this.mA11yScopeTries > 150)
             {
                this.mTooltipsLayer.removeEventListener(Event.ENTER_FRAME,this.A11yScopeFrame);
-               if(this.A11yIsLive(this.mA11yPendingScope)) { this.mA11yScope = this.mA11yPendingScope; }
+               if(this.mA11yPendingScope != null && this.mA11yPendingScope == this.mA11yStatusScope &&
+                  getQualifiedClassName(this.mA11yPendingScope).indexOf("widgets.Gameplay.SituationDisplay.controls::") == 0)
+               {
+                  this.mA11yStatusScope = null;
+                  this.A11yPostToPython("a11y.speak_enc",encodeURIComponent("0|0|no event goals"));
+               }
+               else if(this.A11yIsLive(this.mA11yPendingScope)) { this.mA11yScope = this.mA11yPendingScope; }
                this.mA11yPendingScope = null;
                this.mA11yNavQueue.length = 0;
                return;

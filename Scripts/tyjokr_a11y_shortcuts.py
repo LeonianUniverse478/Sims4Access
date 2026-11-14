@@ -91,6 +91,7 @@ def sections(keyboard=None, numpad=None):
         for vk, alt in combos:
             combo = ('{} + '.format(lang.t('Alt')) if alt else '') + key_name(vk, keyboard)
             ordinary.append('{}: {}'.format(combo, lang.t(label)))
+    ordinary.append(lang.t('shortcut event goals'))
     # These modifier variants are implemented by _plain_message, not BINDINGS.
     ordinary.append(lang.t('shortcut shift tab'))
     if settings.get('simplified_menus', True):
