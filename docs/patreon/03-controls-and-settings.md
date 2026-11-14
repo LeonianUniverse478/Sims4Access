@@ -73,7 +73,7 @@ Close text fields before using these shortcuts. Most actions also require closin
 - **Ctrl + Alt + V:** Running events. Press Enter on one to send all guests home and end it, end it, or send all guests home. Your household is never sent away.
 - **Ctrl + Alt + L:** Turn diagnostic logging on or off (the TS4_Access.log file next to the mod).
 - **Ctrl + Alt + C:** Read the current day and time, including when the game is paused, then your household funds.
-- **Ctrl + Alt + E:** Read the mood and its description, then every moodlet with its effect, time left, reason and description, all at once.
+- **Ctrl + Alt + E:** Browse the current mood and individual moodlets with Up and Down. Escape leaves the panel. Choose Mood and moodlets in the accessibility menu for a continuous reading.
 - **Ctrl + Alt + G:** Read wants and fears.
 - **Ctrl + Alt + Q:** Open the action queue. Each row is something the active Sim is doing or waiting to do, with who chose it. Enter cancels that action.
 - **Ctrl + Alt + P:** Open a waiting call or text. With Simplified menus on and nothing waiting, open the phone action list.
