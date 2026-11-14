@@ -1,6 +1,7 @@
 """Tree navigation scenarios with game, keyboard and speech mocked offline."""
 import unittest
 import sys
+from enum import Enum
 from types import SimpleNamespace
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -17,21 +18,66 @@ class ServingTests(unittest.TestCase):
         for value in ('{S.Plate}', '{S.A}{Y.B}', '{S.A}{S.B}{Y.C}{P.D}'):
             self.assertEqual(scanner._catalog_name(value), value)
 
-    def test_servings_and_optional_quality(self):
-        tuning = SimpleNamespace(SERVINGS_STATISTIC='servings', QUALITY_STATE='quality',
-                                 QUALITY_STATE_VALUE_MAP={'great': SimpleNamespace(state_star_number=3)})
+    def setUp(self):
+        fields = Enum('TooltipFieldsComplete', ('quality', 'quality_description'))
+        self.fields = fields
+        game = {
+            'objects.components': SimpleNamespace(types=SimpleNamespace(TOOLTIP_COMPONENT='tooltip')),
+            'objects.hovertip': SimpleNamespace(TooltipFieldsComplete=fields),
+            'crafting.crafting_tunable': SimpleNamespace(CraftingTuning=SimpleNamespace(SERVINGS_STATISTIC='servings'))
+        }
+        modules = patch.dict(sys.modules, game)
+        modules.start()
+        self.addCleanup(modules.stop)
+        language = patch.object(scanner.lang, '_locale_lang', 'en')
+        language.start()
+        self.addCleanup(language.stop)
+
+    def test_tooltip_quality_preserves_servings_before_or_after_hover(self):
+        supplied = {'quality': SimpleNamespace(field_data=2)}
+        resolved = {}
+        tooltip = SimpleNamespace(get_tooltip_field=resolved.get, _external_field_to_data=supplied)
         obj = Mock(crafting_component=True)
+        obj.get_component.return_value = tooltip
         tracker = obj.get_tracker.return_value
         tracker.get_value.return_value = 0
-        obj.get_state.return_value = 'great'
-        with patch.dict(sys.modules, {'crafting.crafting_tunable': SimpleNamespace(CraftingTuning=tuning)}), \
-                patch.object(scanner.lang, '_locale_lang', 'en'):
-            self.assertEqual(scanner._serving_details(obj), ', servings: 0, quality in stars: 3')
-            obj.has_state.return_value = False
-            self.assertEqual(scanner._serving_details(obj), ', servings: 0')
-            tracker.has_statistic.return_value = False
-            self.assertEqual(scanner._serving_details(obj), '')
-            self.assertEqual(scanner._serving_details(None), '')
+        def check(key=None):
+            expected = [', servings: 0'] + ([('quality', key)] if key else [])
+            self.assertEqual(scanner._serving_details(obj), expected)
+        check(0xD65A6280)
+        for tier, key in [(1, 0x2B79C896), (2, 0xD65A6280), (3, 0xE7486BCE), (0, None), (4, None)]:
+            resolved[self.fields.quality] = tier
+            check(key)
+        spoiled = SimpleNamespace(hash=0xAED7F945, tokens=[])
+        supplied['quality_description'] = SimpleNamespace(field_data=spoiled)
+        check(spoiled.hash)
+        resolved[self.fields.quality_description] = SimpleNamespace(hash=12, tokens=[])
+        check(12)
+        resolved[self.fields.quality_description].tokens = [object()]
+        check()
+        obj.get_component.return_value = None
+        check()
+        tracker.has_statistic.return_value = False
+        self.assertEqual(scanner._serving_details(obj), [])
+        self.assertEqual(scanner._serving_details(None), [])
+
+    def test_quality_localization_and_timeout(self):
+        parts = ['Food, servings: 3', ('quality', 0xD65A6280), ', here']
+        with patch.dict(scanner._loc_cache, {}, clear=True), \
+                patch.dict(scanner._loc_waiting, {}, clear=True), \
+                patch.object(scanner, '_send_ui') as send, \
+                patch.object(scanner.threading, 'Timer'), patch.object(scanner.speech, 'speak') as speak:
+            scanner._speak_parts(parts)
+            self.assertEqual({args[0] for args, _ in send.call_args_list},
+                             {'A11y|loc|{0}|{0}'.format(key) for key in (0x01E8983B, 0xD65A6280)})
+            scanner.a11y_loc_enc('32020539|Quality%3A')
+            speak.assert_not_called()
+            scanner.a11y_loc_enc('3596247680|%3Cspan%20class%3D%22twostar%22%3ENormal%3C%2Fspan%3E')
+            speak.assert_called_once_with('Food, servings: 3, Quality: Normal, here', source='widget')
+            scanner._loc_cache.clear()
+            scanner._speak_parts(parts)
+            scanner._finish(scanner._loc_waiting[0xD65A6280][0])
+            speak.assert_called_with('Food, servings: 3, here', source='widget')
 
 
 class TreeTests(unittest.TestCase):
