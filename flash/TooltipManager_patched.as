@@ -7120,6 +7120,95 @@ package olympus.core
          return "";
       }
 
+      public function A11yCareerTrackOffset(track:Object, target:Object, visited:Array) : int
+      {
+         try
+         {
+            if(track == null || target == null || visited.indexOf(track) >= 0) { return -1; }
+            if(track == target) { return 0; }
+            visited.push(track);
+            var branches:Array = track.branchesData;
+            for(var i:int = 0; branches != null && i < branches.length; i = i + 1)
+            {
+               var offset:int = this.A11yCareerTrackOffset(branches[i],target,visited);
+               if(offset >= 0) { return track.career_levels.length + offset; }
+            }
+         }
+         catch(e:Error) { }
+         return -1;
+      }
+
+      public function A11yCareerOfferDetails(data:Object, parts:Array) : void
+      {
+         try
+         {
+            var title:String = data.GetCurrentLevelName({"simId":data.sim_id});
+            if(title != null && title.length > 0) { parts.push(title); }
+         }
+         catch(titleError:Error) { }
+         var keys:Object = null;
+         try
+         {
+            keys = getDefinitionByName("olympus.localization.KeysGP");
+            var level:int = int(data.user_career_level);
+            if(level <= 0)
+            {
+               // Join offers carry a zero-based index within a track. Its
+               // parent tracks count towards the level the player sees.
+               var track:Object = data.trackStaticData;
+               var index:int = int(data.career_level);
+               if(track != null && "career_level" in data && index >= 0 && index < track.career_levels.length)
+               {
+                  var careers:Object = getDefinitionByName("gamedata.Gameplay.shared.definitions.CareerStaticData");
+                  var offset:int = this.A11yCareerTrackOffset(careers.GetStaticData(data.uid).startTrackData,track,[]);
+                  if(offset >= 0) { level = offset + index + 1; }
+               }
+            }
+            if(level > 0) { parts.push(keys.SIM_INFO_SKILL_PANEL_COLUMN_LEVEL.toString() + " " + level); }
+         }
+         catch(levelError:Error) { }
+         try
+         {
+            if(data.IsAgentRequired() || data.work_schedule == null) { return; }
+            var dates:Object = getDefinitionByName("olympus.utils.DateUtils");
+            var span:Class = getDefinitionByName("olympus.math.TimeSpan") as Class;
+            var shifts:Object = getDefinitionByName("gamedata.Gameplay.shared.ScheduleEntry");
+            var entries:Array = data.work_schedule.schedule_entries;
+            for(var i:int = 0; entries != null && i < entries.length; i = i + 1)
+            {
+               var entry:Object = entries[i];
+               if(entry == null || !(entry.duration > 0)) { continue; }
+               var start:Object = {"token_type":"TimeSpan","token_data":new span(0,0,entry.start_minute,entry.start_hour,0,0,0)};
+               var end:Object = {"token_type":"TimeSpan","token_data":new span(0,0,entry.start_minute + Math.round(entry.duration * 60),entry.start_hour,0,0,0)};
+               if(entry.schedule_shift_type == shifts.SCHEDULESHIFT_MULTI_DAY)
+               {
+                  parts.push(keys.SIM_INFO_CAREERS_TIME_SLOT_MULTI_DAY.toString(start,{"date":dates.DayToLocalizationDayOfWeekToken(entry.multi_day_start_day)},end,{"date":dates.DayToLocalizationDayOfWeekToken(entry.multi_day_end_day)}));
+               }
+               else
+               {
+                  // Entries of the same shift type may have different hours.
+                  // GetWorkDays(type) would merge the weekdays for both.
+                  var days:Array = [];
+                  for(var day:int = 0; day < 7; day = day + 1)
+                  {
+                     if(entry.days != null && entry.days.indexOf(day) >= 0)
+                     {
+                        days.push(keys.CALENDAR_SCHEDULE_WEEKDAY_NAME.toString({"date":dates.DayToLocalizationDayOfWeekToken(day)}));
+                     }
+                  }
+                  if(days.length > 0)
+                  {
+                     var hours:String = entry.schedule_shift_type == shifts.SCHEDULESHIFT_TWENTY_FOUR_HOURS && entry.duration == 24
+                        ? getDefinitionByName("olympus.localization.Keys")["GENERIC_HOURS"].toString(24)
+                        : keys.SIM_INFO_CAREERS_TIME_SLOT.toString(start,end);
+                     parts.push(days.join(", ") + ". " + hours);
+                  }
+               }
+            }
+         }
+         catch(scheduleError:Error) { }
+      }
+
       public function A11yChoiceDescription(item:DisplayObject) : String
       {
          var row:DisplayObject = item;
@@ -7189,6 +7278,7 @@ package olympus.core
             }
             else
             {
+               this.A11yCareerOfferDetails(data,parts);
                if(data.description != null) { parts.push(data.description.toString({"simId":data.sim_id})); }
                keys = getDefinitionByName("olympus.localization.KeysGP");
                careerConstants = getDefinitionByName("gamedata.Gameplay.shared.definitions.CareerStaticData");
