@@ -74,7 +74,13 @@ class ActionQueueTests(unittest.TestCase):
             patcher.start()
             self.addCleanup(patcher.stop)
         self.windows = []
-        window = patch.object(hub, '_window', side_effect=lambda title, text, rows: self.windows.append((title, rows)) or True)
+        hub._dialog_id = None
+        self.selections = []
+        def record_window(title, text, rows, **options):
+            self.windows.append((title, rows))
+            self.selections.append(options.get('selected_index'))
+            return True
+        window = patch.object(hub, '_window', side_effect=record_window)
         window.start()
         self.addCleanup(window.stop)
         self.sim = None
@@ -173,6 +179,31 @@ class ActionQueueTests(unittest.TestCase):
         self.sim = None
         self.assertFalse(hub.action_queue())
         self.assertEqual(self.spoken, [lang.t('load a household first')])
+
+    def test_repeated_enter_refreshes_the_list_and_eventually_shows_empty(self):
+        actions = [Interaction() for _ in range(3)]
+        self.sim = Sim([info(i, name, QUEUED) for i, name in enumerate('ABC')], dict(enumerate(actions)))
+        hub.action_queue()
+        self.windows[-1][1][2][2]()  # B. The UI manager still lists its stale icon.
+        rows = self.windows[-1][1]
+        self.assertEqual([r[0] for r in rows], ['A', 'C', 'Cancel all actions'])
+        self.assertEqual(self.selections[-1], 1)
+        rows[-1][2]()
+        self.assertEqual([r[0] for r in self.windows[-1][1]], [lang.t('queue empty')])
+        self.windows[-1][1][0][2]()
+        self.assertEqual(self.windows[-1][0], 'action queue')
+        self.assertEqual([len(action.cancels) for action in actions], [1, 1, 1])
+
+    def test_refused_action_stays_and_other_dialog_is_not_replaced(self):
+        action = Interaction(accepts=False)
+        self.sim = Sim([info(1, 'Nap', RUNNING)], {1: action})
+        hub.action_queue()
+        self.assertFalse(self.rows()[0][2]())
+        self.assertEqual([r[0] for r in self.windows[-1][1]], ['Nap'])
+        hub._dialog_id = 17
+        self.windows[-1][1][0][2]()
+        self.assertEqual(len(self.windows), 2)
+        self.assertEqual(len(action.cancels), 1)
 
     def test_the_accessibility_menu_offers_the_queue(self):
         self.windows.clear()
