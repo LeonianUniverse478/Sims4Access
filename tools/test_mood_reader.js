@@ -1,6 +1,5 @@
 'use strict';
-// Control Alt E: TooltipManager.A11yMood hands the reading to SimHub's
-// MoodContainer by name (or posts an empty, unavailable reply), and
+// Control Alt E browses the panel. The accessibility menu reads a summary.
 // MoodContainer posts one a11y.mood_enc record per moodlet with every
 // BuffTooltip field. Logic only; the gates and live tests prove the movie.
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
@@ -10,7 +9,9 @@ function method(source,name,globals){
  const sig=new RegExp('public function '+name+'\\(([^)]*)\\)\\s*:\\s*[\\w.<>]+\\s*\\{').exec(source);assert(sig,name);
  let start=sig.index+sig[0].length,at=start,depth=1;
  while(depth){if(source[at]==='{')depth++;if(source[at]==='}')depth--;at++;}
- const strip=s=>s.replace(/(\w):(Vector\.<\w+>|\*|\w+)/g,'$1').replace(/\s+as\s+DisplayObject\b/g,'');
+ const strip=s=>s.replace(/(\w):(Vector\.<\w+>|\*|\w+)/g,'$1')
+   .replace(/\s+as\s+(DisplayObject|BuffInfo|TooltipExtension)\b/g,'')
+   .replace(/(\w+) as BuffCellView/g,'($1 instanceof BuffCellView ? $1 : null)');
  return vm.runInNewContext('(function('+strip(sig[1]).replace(/\s*=\s*null/g,'')+'){'+strip(source.slice(start,at-1))+'})',
    Object.assign({String,int:x=>x|0,encodeURIComponent},globals||{}));
 }
@@ -26,10 +27,34 @@ for(const [label,state,expectRead,expectPosts] of [
  let reads=0;const posts=[];
  const hub=state.hub?{mcMoodContainer:{A11yReadMood:()=>{reads++;}}}:null;
  method(tm,'A11yMood').call({mA11yKeyboard:state.keyboard,mA11yActiveModalRoot:state.modal?{}:null,
-   A11yLoadedWidget:()=>hub,A11yIsLive:o=>!!o,A11yPostToPython:(c,p)=>posts.push([c,p])});
+   A11yLoadedWidget:()=>hub,A11yIsLive:o=>!!o,A11yPostToPython:(c,p)=>posts.push([c,p]),
+   A11yOpenMoodPanel:method(tm,'A11yOpenMoodPanel')});
  assert.strictEqual(reads,expectRead,label);assert.deepStrictEqual(posts,expectPosts,label);checks++;
 }
 assert(/"a11y\.clock_enc","a11y\.mood_enc"/.test(tm),'startup allow list');checks++;
+
+const calls = [];
+const activeHub = {mcMoodContainer: {A11yReadMood: () => calls.push('summary')},
+  mcBuffDisplay: {mcGridView:{visible:false}, SetExpandedViewVisibility: value => calls.push(value)}};
+const controller = {
+  mA11yKeyboard: true, A11yIsLive: () => true, A11yLoadedWidget: () => activeHub,
+  A11yOpenMoodPanel: method(tm, 'A11yOpenMoodPanel'),
+  A11yFocusInto(scope) { assert.strictEqual(this.mA11yStatusScope, scope); calls.push(scope); },
+  A11yReleaseBuildCatalog: () => false, A11yClearFocus() { calls.push('dismissed'); }
+};
+method(tm, 'A11yMood').call(controller);
+assert.deepStrictEqual(calls, [true, activeHub]); checks++;
+controller.mA11yScope = activeHub;
+method(tm, 'A11yDismiss').call(controller);
+assert.deepStrictEqual(calls.slice(2), [false, 'dismissed']); checks++;
+calls.length=0;
+activeHub.mcBuffDisplay.mcGridView.visible=true;
+method(tm, 'A11yMood').call(controller);
+controller.mA11yScope=activeHub;
+method(tm,'A11yDismiss').call(controller);
+assert.deepStrictEqual(calls,[true,activeHub,'dismissed']); checks++;
+method(tm, 'A11yMoodSummary').call(controller);
+assert.strictEqual(calls.pop(), 'summary'); checks++;
 
 // MoodContainer side.
 const moods={happy:{GetMoodName:()=>'Happy'},tense:{GetMoodName:()=>'Tense'}};
@@ -42,6 +67,7 @@ const globals={
  GameplayStateData:{ActiveSimToken:{},AllBuffInfo:null},sA11yMoodSeq:0,
  TimeSpan:function(){this.Set=ms=>{this.ms=ms;};this.ConvertToMinutes=()=>Math.floor(this.ms/60000);},
  TextField:function(){let t='';Object.defineProperty(this,'htmlText',{set:v=>{t=v.replace(/<[^>]*>/g,'');}});Object.defineProperty(this,'text',{get:()=>t});},
+ BuffCellView:class {}, TooltipExtension:{},
 };
 const posts=[];
 globals.TooltipManager={getInstance:()=>({A11yPostToPython:(c,p)=>posts.push([c,decodeURIComponent(p)])})};
@@ -58,6 +84,13 @@ globals.GameplayStateData.AllBuffInfo=[
   TimeoutString:loc((m,n)=>'Becomes '+n+' in '+m),TimeoutStringNoNextBuff:{IsValid:()=>false}},
  {mood_weight:0,MoodKey:'0',StaticMoodKey:'0',mood_type_override:null,Name:'Neutral',Reason:'',Description:'',timeout:'0'}];
 self.A11yReadMood();
+const rowText = method(mc,'A11yMoodRowText',globals);
+assert.equal(rowText.call(self,self),'Very Happy. Feeling good (really!)');checks++;
+const cell=new globals.BuffCellView();
+cell.mcTooltipHolder={GetExtension:()=>({Data:{info:globals.GameplayStateData.AllBuffInfo[0]}})};
+assert.equal(rowText.call(self,cell),'Had a Great Meal. Happy +1. (From Eating). Expires in 180. Delicious.');checks++;
+cell.mcTooltipHolder={GetExtension:()=>null};
+assert.equal(rowText.call(self,cell),'');assert.equal(rowText.call(self,{}),'');checks++;
 const S='\u0001';
 assert(posts.every(p=>p[0]==='a11y.mood_enc'));checks++;
 assert.deepStrictEqual(posts.map(p=>p[1]),[
