@@ -36,6 +36,7 @@ The keyboard router provides scanner mode and equivalent Ctrl+Alt chords.
 Native menus own navigation while open.
 """
 import math
+import re
 import threading
 import time
 
@@ -182,6 +183,22 @@ def _send_ui(name):
         return False
 
 
+_QUANTITY_FORM = re.compile(r'\{([SYP])\.([^{}]+)\}')
+_QUANTITY_GROUP = re.compile(r'\{[SYP]\.[^{}]+\}(?:[ \t]*\{[SYP]\.[^{}]+\})+')
+
+
+def _catalog_name(text):
+    """Choose the standalone name when the client returns Polish quantity forms."""
+    def singular(match):
+        forms = _QUANTITY_FORM.findall(match.group())
+        variants = dict(forms)
+        if len(forms) == 3 and variants.keys() == {'S', 'Y', 'P'}:
+            return variants['S']
+        return match.group()
+
+    return _QUANTITY_GROUP.sub(singular, text)
+
+
 def _finish(pending):
     with _loc_lock:
         if pending.done:
@@ -194,7 +211,8 @@ def _finish(pending):
         pieces = []
         for part in pending.parts:
             if isinstance(part, tuple):
-                pieces.append(_loc_cache.get(part[1], ''))
+                resolved = _loc_cache.get(part[1], '')
+                pieces.append(_catalog_name(resolved) if part[0] == 'catalog' else resolved)
             else:
                 pieces.append(part)
     text = ''.join(pieces).replace(' ,', ',').replace('  ', ' ').strip()
@@ -867,7 +885,7 @@ def _name_part(entry):
     if entry.name:
         return entry.name
     if entry.name_hash:
-        return ('loc', entry.name_hash)
+        return ('loc' if entry.is_sim else 'catalog', entry.name_hash)
     return ''
 
 
@@ -890,12 +908,35 @@ def _place_part(entry):
     return where
 
 
+def _serving_details(obj):
+    if not getattr(obj, 'crafting_component', None):
+        return ''
+    from crafting.crafting_tunable import CraftingTuning
+    statistic = CraftingTuning.SERVINGS_STATISTIC
+    tracker = obj.get_tracker(statistic)
+    if tracker is None or not tracker.has_statistic(statistic):
+        return ''
+    count = max(0, int(tracker.get_value(statistic)))
+    details = ', ' + lang.t('servings count').format(count)
+    if obj.has_state(CraftingTuning.QUALITY_STATE):
+        quality = CraftingTuning.QUALITY_STATE_VALUE_MAP.get(obj.get_state(CraftingTuning.QUALITY_STATE))
+        if quality is not None:
+            details += ', ' + lang.t('quality stars').format(quality.state_star_number)
+    return details
+
+
 def _entry_parts(entry, index, total):
     import tyjokr_a11y_cleanliness as cleanliness
     status = ', ' + lang.t('scanner unavailable') if entry.availability == 'locked' else ''
     if entry.role:
         status = ', ' + entry.role + status
-    return [_name_part(entry), cleanliness.suffix(entry) + status + ', ' + _place_part(entry),
+    details = ''
+    if not entry.is_sim:
+        try:
+            details = _serving_details(_object_for_entry(entry))
+        except Exception as ex:
+            speech.log_line('scanner: serving details unavailable: {!r}'.format(ex))
+    return [_name_part(entry), details + cleanliness.suffix(entry) + status + ', ' + _place_part(entry),
             '. {} {} {}.'.format(index + 1, lang.t('of'), total)]
 
 
