@@ -14,6 +14,7 @@ _TRANSLATIONS = {
     'scanner subcategory': {'en': 'Subcategory', 'pl': 'Podkategoria'},
     'phone': {'en': 'Phone', 'pl': 'Telefon'},
     # --- settings menu (tyjokr_a11y_menu) ---
+    'incoming caller': {'en': 'Calling: {}'},
     'on': {
         'en': 'on',
         'de': 'an',
