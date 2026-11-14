@@ -1159,7 +1159,6 @@ _TRANSLATIONS.update({
 
 _TRANSLATIONS.update({
     'servings count': {'en': 'servings: {}'},
-    'quality stars': {'en': 'quality in stars: {}'},
 })
 
 _locale_lang = None

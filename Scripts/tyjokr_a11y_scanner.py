@@ -185,6 +185,9 @@ def _send_ui(name):
 
 _QUANTITY_FORM = re.compile(r'\{([SYP])\.([^{}]+)\}')
 _QUANTITY_GROUP = re.compile(r'\{[SYP]\.[^{}]+\}(?:[ \t]*\{[SYP]\.[^{}]+\})+')
+# Gameplay's HoverTipPanel resolves these KeysGP strings for the quality row.
+_QUALITY_HEADING = 0x01E8983B
+_QUALITY_LABELS = {1: 0x2B79C896, 2: 0xD65A6280, 3: 0xE7486BCE}
 
 
 def _catalog_name(text):
@@ -212,7 +215,14 @@ def _finish(pending):
         for part in pending.parts:
             if isinstance(part, tuple):
                 resolved = _loc_cache.get(part[1], '')
-                pieces.append(_catalog_name(resolved) if part[0] == 'catalog' else resolved)
+                if part[0] == 'quality':
+                    from tyjokr_a11y_narrator import _clean_glyphs
+                    value = _clean_glyphs(resolved)
+                    if value:
+                        heading = _clean_glyphs(_loc_cache.get(_QUALITY_HEADING, ''))
+                        pieces.append(', ' + (heading + ' ' if heading else '') + value)
+                else:
+                    pieces.append(_catalog_name(resolved) if part[0] == 'catalog' else resolved)
             else:
                 pieces.append(part)
     text = ''.join(pieces).replace(' ,', ',').replace('  ', ' ').strip()
@@ -229,8 +239,9 @@ def _speak_parts(parts):
         _announce_seq[0] += 1
         pending = _Pending(list(parts), _announce_seq[0])
         for part in pending.parts:
-            if isinstance(part, tuple) and part[1] and part[1] not in _loc_cache:
-                pending.missing.add(part[1])
+            if isinstance(part, tuple):
+                keys = (part[1], _QUALITY_HEADING) if part[0] == 'quality' else (part[1],)
+                pending.missing.update(key for key in keys if key and key not in _loc_cache)
         if not pending.missing:
             need_send = []
         else:
@@ -908,20 +919,46 @@ def _place_part(entry):
     return where
 
 
+def _food_quality_key(obj):
+    from objects.components import types
+    from objects.hovertip import TooltipFieldsComplete
+    tooltip = obj.get_component(types.TOOLTIP_COMPONENT)
+    if tooltip is None:
+        return None
+
+    def field_value(field):
+        value = tooltip.get_tooltip_field(field)
+        if value is None:
+            # Before the first mouse hover the crafting component has supplied
+            # its fields, but the client metadata handles may not exist yet.
+            supplied = tooltip._external_field_to_data.get(field.name)
+            if supplied is not None:
+                value = supplied.field_data
+        return value
+
+    description = field_value(TooltipFieldsComplete.quality_description)
+    if description is not None and description.hash:
+        # The loc channel accepts a single STBL key without formatting tokens.
+        return None if description.tokens else description.hash
+    return _QUALITY_LABELS.get(field_value(TooltipFieldsComplete.quality))
+
+
 def _serving_details(obj):
     if not getattr(obj, 'crafting_component', None):
-        return ''
+        return []
     from crafting.crafting_tunable import CraftingTuning
     statistic = CraftingTuning.SERVINGS_STATISTIC
     tracker = obj.get_tracker(statistic)
     if tracker is None or not tracker.has_statistic(statistic):
-        return ''
+        return []
     count = max(0, int(tracker.get_value(statistic)))
-    details = ', ' + lang.t('servings count').format(count)
-    if obj.has_state(CraftingTuning.QUALITY_STATE):
-        quality = CraftingTuning.QUALITY_STATE_VALUE_MAP.get(obj.get_state(CraftingTuning.QUALITY_STATE))
-        if quality is not None:
-            details += ', ' + lang.t('quality stars').format(quality.state_star_number)
+    details = [', ' + lang.t('servings count').format(count)]
+    try:
+        key = _food_quality_key(obj)
+        if key:
+            details.append(('quality', key))
+    except Exception as ex:
+        speech.log_line('scanner: food quality unavailable: {!r}'.format(ex))
     return details
 
 
@@ -930,14 +967,15 @@ def _entry_parts(entry, index, total):
     status = ', ' + lang.t('scanner unavailable') if entry.availability == 'locked' else ''
     if entry.role:
         status = ', ' + entry.role + status
-    details = ''
+    parts = [_name_part(entry)]
     if not entry.is_sim:
         try:
-            details = _serving_details(_object_for_entry(entry))
+            parts.extend(_serving_details(_object_for_entry(entry)))
         except Exception as ex:
             speech.log_line('scanner: serving details unavailable: {!r}'.format(ex))
-    return [_name_part(entry), details + cleanliness.suffix(entry) + status + ', ' + _place_part(entry),
-            '. {} {} {}.'.format(index + 1, lang.t('of'), total)]
+    parts.extend([cleanliness.suffix(entry) + status + ', ' + _place_part(entry),
+                  '. {} {} {}.'.format(index + 1, lang.t('of'), total)])
+    return parts
 
 
 def _sub_label_part(entries, entry):
