@@ -469,7 +469,43 @@ def _install():
     UiDialogService.dialog_show = dialog_show
 
 
+def _install_caller_name():
+    from distributor.system import Distributor
+    from protocolbuffers import Consts_pb2
+    from sims4.localization import LocalizationHelperTuning
+    import services
+
+    original = Distributor.add_event
+    if getattr(original, '_a11y_caller_name', False):
+        return
+
+    @functools.wraps(original)
+    def add_event(self, msg_id, msg, *args, **kwargs):
+        if msg_id == Consts_pb2.MSG_UI_PHONE_RING and settings.get('keyboard', True):
+            try:
+                caller = services.sim_info_manager().get(msg.caller_id)
+                name = ' '.join(part for part in (caller.first_name, caller.last_name) if part) if caller else ''
+                if name:
+                    prefix = LocalizationHelperTuning.get_raw_text(lang.t('incoming caller').format(name))
+                    text = LocalizationHelperTuning.get_new_line_separated_strings(prefix, msg.dialog.text)
+                    outgoing = type(msg)()
+                    outgoing.CopyFrom(msg)
+                    outgoing.dialog.text.CopyFrom(text)
+                    msg = outgoing
+            except Exception as ex:
+                speech.log_line('phone: caller identification unavailable: {!r}'.format(ex))
+        return original(self, msg_id, msg, *args, **kwargs)
+
+    add_event._a11y_caller_name = True
+    Distributor.add_event = add_event
+
+
 try:
     _install()
 except Exception as ex:
     speech.log_line('phone: hook unavailable: {!r}'.format(ex))
+
+try:
+    _install_caller_name()
+except Exception as ex:
+    speech.log_line('phone: caller hook unavailable: {!r}'.format(ex))
