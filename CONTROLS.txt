@@ -148,8 +148,9 @@ category reads its milestones.
 Ctrl+Alt+K: Character values of the active Sim (Parenthood).
 Ctrl+Alt+C: Read the current day and time, including when the game is paused,
 then your household funds.
-Ctrl+Alt+E: Read the mood and its description, then every moodlet with
-its effect, time left, reason and description, all at once.
+Ctrl+Alt+E: Open the mood panel. Use Up and Down to hear individual moodlets,
+including their effects, causes and remaining time. Escape leaves the panel.
+For a continuous reading, choose Mood and moodlets in the accessibility menu.
 Ctrl+Alt+G: Read wants and fears.
 Ctrl+Alt+Q: Open the action queue. Each row is something the active Sim is
 doing or waiting to do, with who chose it. Enter cancels that action.

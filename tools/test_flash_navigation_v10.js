@@ -93,7 +93,7 @@ function manager() {
     'A11yCalendarAddOwner', 'A11ySemanticTarget', 'A11yTextDecoration', 'A11yHiddenHireControl',
     'A11yKeyboardDecoration', 'A11yInformational', 'A11yCompositeRow', 'A11yActionProxy',
     'A11yCollectFocusables', 'A11yCollectText', 'A11yMapLabel', 'A11yWizardNavLabel', 'A11yChoiceDescription', 'A11yAnnounceDisplay',
-    'A11yOptionsRowLabel']) {
+    'A11yOptionsRowLabel', 'A11yCollectMoodRows']) {
     value[name] = method(tooltip, name);
   }
   return value;
@@ -222,6 +222,33 @@ test('Phone uses its native tooltip once, with a fallback only when no label exi
     const segments = speech[0].split('\u0001').map(value => value.slice(value.lastIndexOf('|') + 1));
     assert.deepStrictEqual(segments, [nativeLabel || 'phone']);
   }
+});
+test('Mood navigation collects only the header and visible buff cells in the active hub', () => {
+  const ui=manager(), hub=new MovieClip('hub'), kind='widgets.Gameplay.SimHub::BuffCellView';
+  ui.mA11yStatusScope=hub;
+  const header=hub.mcMoodContainer=hub.add(new MovieClip('mood'));
+  const display=hub.mcBuffDisplay=hub.add(new MovieClip('buffs'));
+  const row=display.add(new MovieClip('first',kind));
+  const hidden=display.add(new MovieClip('hidden'));
+  hidden.visible=false; hidden.add(new MovieClip('second',kind));
+  display.add(new TextField('art','Blip'));
+  let rows=[]; ui.A11yCollectFocusables(hub,rows,0);
+  assert.deepStrictEqual(rows,[header,row]);
+  row.visible=false;
+  rows=[]; ui.A11yCollectFocusables(hub,rows,0);
+  assert.deepStrictEqual(rows,[header]);
+});
+test('Mood rows use the ordinary payload escaping, size limit and repeat suppression', () => {
+  const ui=manager(), cell=new MovieClip('cell','widgets.Gameplay.SimHub::BuffCellView');
+  const reason="(From a Sim's meal!)", description=reason+'x'.repeat(1500);
+  ui.mA11yStatusScope={mcBuffDisplay:{},mcMoodContainer:{A11yMoodRowText:()=>description}};
+  const posts=[];
+  runtime.CommunicationManager={PostServerCommand:(name,payload)=>posts.push(payload)};
+  ui.A11yAnnounceDisplay(cell,'a11y.widget_enc',false);
+  ui.A11yAnnounceDisplay(cell,'a11y.widget_enc',false);
+  assert.equal(posts.length,1);
+  assert(!/[()'!]/.test(posts[0]));
+  assert.strictEqual(decodeURIComponent(posts[0]),('0|0|'+description).slice(0,1400));
 });
 test('Dialog close control is excluded while its Main Menu action remains reachable', () => {
   const ui = manager(), dialog = new MovieClip('dialog', 'widgets.Dialog.dialogs::DialogContainer');

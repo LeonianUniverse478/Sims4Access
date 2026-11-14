@@ -16,7 +16,7 @@ _dialog_id = None
 # checks and panel setup. The hub is closed before one of these is sent.
 PANELS = (
     ('needs', 'A11yNeeds'),
-    ('mood and moodlets', 'A11yMood'),
+    ('mood and moodlets', 'A11yMoodSummary'),
     ('wants and fears', 'A11yWants'),
     ('aspirations', 'OpenSimInfoAspirationPanel'),
     ('skills', 'OpenSimInfoSkillPanel'),

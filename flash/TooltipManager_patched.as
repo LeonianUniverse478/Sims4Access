@@ -133,6 +133,7 @@ package olympus.core
       protected var mA11yFocusDue:int = 0;
       protected var mA11yFocusPending:DisplayObject = null;
       protected var mA11yStatusScope:DisplayObject = null;
+      protected var mA11yExpandedMoodPanel:Boolean = false;
       protected var mA11yPhoneOwner:String = "";
       protected var mA11yPhoneUntil:int = 0;
       // TS4 Access Plus catalog bridge (merged 2026-10-08): the products of the
@@ -3413,7 +3414,7 @@ package olympus.core
             {
                this.A11yDrawFocusRing(this.mA11yFocused);
                this.mA11yLast = "";
-               if("A11yAnnounceMood" in this.mA11yFocused) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
+               if("A11yAnnounceMood" in this.mA11yFocused && (this.mA11yStatusScope == null || !("mcBuffDisplay" in this.mA11yStatusScope))) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
                else
                {
                   this.A11yAnnounceDisplay(this.mA11yFocused,"a11y.focus_enc",true);
@@ -3449,7 +3450,7 @@ package olympus.core
             {
                this.mA11yLast = "";
                this.A11yFocusHover(null,this.mA11yFocused);
-               if("A11yAnnounceMood" in this.mA11yFocused) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
+               if("A11yAnnounceMood" in this.mA11yFocused && (this.mA11yStatusScope == null || !("mcBuffDisplay" in this.mA11yStatusScope))) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
                else { this.A11yAnnounceDisplay(this.mA11yFocused,"a11y.focus_enc",true); }
             }
          }
@@ -3573,15 +3574,36 @@ package olympus.core
 
       public function A11yMood(param1:Object = null) : void
       {
-         var hub:Object = this.A11yLoadedWidget("SimHub");
+         this.A11yOpenMoodPanel(true);
+      }
+
+      public function A11yMoodSummary(param1:Object = null) : void
+      {
+         this.A11yOpenMoodPanel(false);
+      }
+
+      public function A11yOpenMoodPanel(browse:Boolean) : void
+      {
+         var hub:Object = null;
          try
          {
             if(!this.mA11yKeyboard || this.mA11yActiveModalRoot != null) { return; }
-            // The whole panel is read in one reply by SimHub's MoodContainer,
-            // the only movie defining it and the buff classes it reads; it is
-            // reached by name so no other movie resolves those classes.
+            hub = this.A11yLoadedWidget("SimHub");
+            // Focus the mood header first. SimHub owns the tooltip types and
+            // also provides the aggregate reading when the buff display is absent.
             if(this.A11yIsLive(hub as DisplayObject) && hub["mcMoodContainer"] != null)
             {
+               if(browse && hub["mcBuffDisplay"] != null)
+               {
+                  if(hub != this.mA11yStatusScope)
+                  {
+                     this.mA11yExpandedMoodPanel = !hub["mcBuffDisplay"]["mcGridView"].visible;
+                  }
+                  hub["mcBuffDisplay"]["SetExpandedViewVisibility"](true);
+                  this.mA11yStatusScope = hub as DisplayObject;
+                  this.A11yFocusInto(this.mA11yStatusScope);
+                  return;
+               }
                hub["mcMoodContainer"]["A11yReadMood"]();
                return;
             }
@@ -4317,6 +4339,7 @@ package olympus.core
             CommunicationManager.AddMessageListenerByName("A11yInspect",this.A11yInspect,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yClock",this.A11yClock,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yMood",this.A11yMood,"A11yNarrator");
+            CommunicationManager.AddMessageListenerByName("A11yMoodSummary",this.A11yMoodSummary,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yInvItemActions",this.A11yInvItemActions,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yBuildGridOn",this.A11yBuildGridOnMsg,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yBuildGridOff",this.A11yBuildGridOffMsg,"A11yNarrator");
@@ -4675,6 +4698,11 @@ package olympus.core
             if(this.A11yReleaseBuildCatalog()) { return; }
             if(owner == this.mA11yStatusScope)
             {
+               if(owner != null && "mcBuffDisplay" in owner && this.mA11yExpandedMoodPanel)
+               {
+                  this.mA11yExpandedMoodPanel = false;
+                  owner["mcBuffDisplay"]["SetExpandedViewVisibility"](false);
+               }
                this.mA11yStatusScope = null;
                this.A11yClearFocus();
                this.mA11yScope = null;
@@ -4955,8 +4983,30 @@ package olympus.core
       }
 
 
+      public function A11yCollectMoodRows(item:DisplayObject, rows:Array, depth:int) : void
+      {
+         if(item == null || !item.visible || item.alpha <= 0.01 || depth > 40) { return; }
+         if(getQualifiedClassName(item) == "widgets.Gameplay.SimHub::BuffCellView")
+         {
+            rows.push(item);
+            return;
+         }
+         var children:DisplayObjectContainer = item as DisplayObjectContainer;
+         if(children == null) { return; }
+         for(var i:int = 0; i < children.numChildren; i = i + 1)
+         {
+            this.A11yCollectMoodRows(children.getChildAt(i),rows,depth + 1);
+         }
+      }
+
       public function A11yCollectFocusables(param1:DisplayObject, param2:Array, param3:int) : void
       {
+         if(param1 != null && param1 == this.mA11yStatusScope && "mcBuffDisplay" in param1)
+         {
+            param2.push(Object(param1)["mcMoodContainer"]);
+            this.A11yCollectMoodRows(Object(param1)["mcBuffDisplay"] as DisplayObject,param2,0);
+            return;
+         }
          var _loc4_:DisplayObjectContainer = null;
          var _loc5_:int = 0;
          var _loc6_:Rectangle = null;
@@ -5716,7 +5766,7 @@ package olympus.core
                param1.stage.focus = param1 is TextField && TextField(param1).type == "input" ? TextField(param1) : null;
             }
             this.A11yDrawFocusRing(param1);
-            if(param1 != null && "A11yAnnounceMood" in param1) { Object(param1)["A11yAnnounceMood"](); }
+            if(param1 != null && "A11yAnnounceMood" in param1 && (this.mA11yStatusScope == null || !("mcBuffDisplay" in this.mA11yStatusScope))) { Object(param1)["A11yAnnounceMood"](); }
             else { this.A11yAnnounceDisplay(param1,"a11y.widget_enc",false); }
             // Settled re-reading corrects fast list scrolling. Informational
             // icons retain their existing hover narration without a second
@@ -8113,6 +8163,15 @@ package olympus.core
                if(_loc7_.length > 0)
                {
                   _loc2_.push("999999|999999|" + _loc7_);
+               }
+            }
+            if(this.mA11yStatusScope != null && "mcBuffDisplay" in this.mA11yStatusScope &&
+               (param6 == "a11y.widget_enc" || param6 == "a11y.focus_enc"))
+            {
+               var moodText:String = Object(this.mA11yStatusScope)["mcMoodContainer"]["A11yMoodRowText"](param1);
+               if(moodText.length > 0)
+               {
+                  _loc2_ = ["0|0|" + moodText];
                }
             }
             if((param6 == "a11y.widget_enc" || param6 == "a11y.focus_enc") && _loc2_.length == 1)
