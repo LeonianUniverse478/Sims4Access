@@ -621,6 +621,12 @@ def _deliver_activation(message_name, epoch):
 def _send(message_name):
     # Speech-control actions are handled in Python; only focus navigation
     # goes to the Flash layer.
+    import tyjokr_a11y_store as store
+    if message_name in ('A11yStoreHousehold', 'A11yStoreSim'):
+        store.enqueue('sim' if message_name == 'A11yStoreSim' else 'household')
+        return
+    if message_name != 'A11y|lease' and not message_name.startswith('A11y|keyup|'):
+        store.cancel()
     if message_name == 'A11yRepeat':
         try:
             speech.repeat_last()
@@ -1273,6 +1279,8 @@ def _plain_message(vk, ctrl=False, alt=False, shift=False):
     """One policy for native context, editing and optional numpad navigation."""
     if not _enabled:
         return None
+    if vk == 0x08 and not alt and ctrl != shift and _scanner_live and _scanner_routing() and not blocking_active():
+        return 'A11yStoreSim' if ctrl else 'A11yStoreHousehold'
     if vk == 0x4E and ctrl and shift and not alt and not _modal_active and not _editing_active:
         return 'A11yNeeds'
     if ctrl or alt:

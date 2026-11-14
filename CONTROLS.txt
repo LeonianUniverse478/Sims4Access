@@ -27,6 +27,9 @@ Extra scanner shortcuts:
 Ctrl+Alt+Space: Turn Scanner mode on or off.
 Ctrl+Alt+S: Refresh the scanner.
 Ctrl+Alt+W: Read your location.
+Ctrl+Backspace: Store the selected object in the active Sim's inventory.
+Shift+Backspace: Store the selected object in household inventory on the home lot.
+For either inventory, repeat the same shortcut within 15 seconds to confirm.
 
 MENUS AND DIALOGS
 
