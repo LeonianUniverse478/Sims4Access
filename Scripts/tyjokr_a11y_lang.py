@@ -10,6 +10,15 @@ Translations are first-pass; refine per-language as feedback arrives.
 """
 
 _TRANSLATIONS = {
+    'shortcut store': {'en': 'Scanner: Shift+Backspace stores an object in household inventory; Ctrl+Backspace stores it in Sim inventory.'},
+    'store home only': {'en': 'Household inventory requires the home lot.'},
+    'store protected': {'en': 'This object cannot be moved safely.'},
+    'store unavailable': {'en': 'The inventory cannot accept this object.'},
+    'store select object': {'en': 'Select an available object in the scanner.'},
+    'store confirm household': {'en': 'Press Shift+Backspace again to move to household inventory.'},
+    'store confirm sim': {'en': 'Press Ctrl+Backspace again to move to the inventory of {}.'},
+    'store moved': {'en': 'Moved to inventory.'},
+    'store unverified': {'en': 'Transfer could not be confirmed. Check the inventory.'},
     'scanner category': {'en': 'Category', 'pl': 'Kategoria'},
     'scanner subcategory': {'en': 'Subcategory', 'pl': 'Podkategoria'},
     'phone': {'en': 'Phone', 'pl': 'Telefon'},
