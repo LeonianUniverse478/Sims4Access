@@ -1,10 +1,9 @@
 """Tree navigation scenarios with game, keyboard and speech mocked offline."""
-import unittest
 import sys
-from enum import Enum
+import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+from urllib.parse import quote
 import test_feedback_v9 as fixture
 import tyjokr_a11y_scanner as scanner
 
@@ -19,65 +18,194 @@ class ServingTests(unittest.TestCase):
             self.assertEqual(scanner._catalog_name(value), value)
 
     def setUp(self):
-        fields = Enum('TooltipFieldsComplete', ('quality', 'quality_description'))
-        self.fields = fields
-        game = {
-            'objects.components': SimpleNamespace(types=SimpleNamespace(TOOLTIP_COMPONENT='tooltip')),
-            'objects.hovertip': SimpleNamespace(TooltipFieldsComplete=fields),
-            'crafting.crafting_tunable': SimpleNamespace(CraftingTuning=SimpleNamespace(SERVINGS_STATISTIC='servings'))
-        }
-        modules = patch.dict(sys.modules, game)
-        modules.start()
-        self.addCleanup(modules.stop)
-        language = patch.object(scanner.lang, '_locale_lang', 'en')
-        language.start()
-        self.addCleanup(language.stop)
+        self.objects = {}
+        services = SimpleNamespace(object_manager=lambda: self.objects)
+        crafting = SimpleNamespace(CraftingTuning=SimpleNamespace(SERVINGS_STATISTIC='servings'))
+        styles = SimpleNamespace(HOVER_TIP_DISABLED=0, HOVER_TIP_DEFAULT=1,
+                                 HOVER_TIP_CONSUMABLE_CRAFTABLE=2, HOVER_TIP_GARDENING=3,
+                                 HOVER_TIP_COLLECTION=4, HOVER_TIP_CUSTOM_OBJECT=5,
+                                 HOVER_TIP_ICON_TITLE_DESCRIPTION=6, HOVER_TIP_OBJECT_RELATIONSHIP=7,
+                                 HOVER_TIP_HEIRLOOM_OBJECT=8)
+        modules = {'services': services, 'crafting.crafting_tunable': crafting,
+                   'objects.hovertip': SimpleNamespace(HovertipStyle=styles)}
+        for setting in (patch.dict(sys.modules, modules), patch.object(scanner.lang, '_locale_lang', 'en'),
+                        patch.object(scanner.pump, 'post', side_effect=lambda fn, *args: fn(*args) or True)):
+            setting.start()
+            self.addCleanup(setting.stop)
 
-    def test_tooltip_quality_preserves_servings_before_or_after_hover(self):
-        supplied = {'quality': SimpleNamespace(field_data=2)}
-        resolved = {}
-        tooltip = SimpleNamespace(get_tooltip_field=resolved.get, _external_field_to_data=supplied)
-        obj = Mock(crafting_component=True)
-        obj.get_component.return_value = tooltip
-        tracker = obj.get_tracker.return_value
-        tracker.get_value.return_value = 0
-        def check(key=None):
-            expected = [', servings: 0'] + ([('quality', key)] if key else [])
-            self.assertEqual(scanner._serving_details(obj), expected)
-        check(0xD65A6280)
-        for tier, key in [(1, 0x2B79C896), (2, 0xD65A6280), (3, 0xE7486BCE), (0, None), (4, None)]:
-            resolved[self.fields.quality] = tier
-            check(key)
-        spoiled = SimpleNamespace(hash=0xAED7F945, tokens=[])
-        supplied['quality_description'] = SimpleNamespace(field_data=spoiled)
-        check(spoiled.hash)
-        resolved[self.fields.quality_description] = SimpleNamespace(hash=12, tokens=[])
-        check(12)
-        resolved[self.fields.quality_description].tokens = [object()]
-        check()
-        obj.get_component.return_value = None
-        check()
-        tracker.has_statistic.return_value = False
-        self.assertEqual(scanner._serving_details(obj), [])
-        self.assertEqual(scanner._serving_details(None), [])
+    def object(self, ident, style, fields=(), crafted=False, servings=None, valid=True):
+        obj = SimpleNamespace(id=ident, valid_for_distribution=valid, hover_tip=style,
+                              crafting_component=crafted, _ui_metadata_stack=None)
+        tracker = SimpleNamespace(has_statistic=lambda stat: stat == 'servings' and servings is not None,
+                                  get_value=lambda stat: servings)
+        obj.get_tracker = lambda stat: tracker
 
-    def test_quality_localization_and_timeout(self):
-        parts = ['Food, servings: 3', ('quality', 0xD65A6280), ', here']
-        with patch.dict(scanner._loc_cache, {}, clear=True), \
-                patch.dict(scanner._loc_waiting, {}, clear=True), \
-                patch.object(scanner, '_send_ui') as send, \
-                patch.object(scanner.threading, 'Timer'), patch.object(scanner.speech, 'speak') as speak:
+        built = False
+
+        def build_tooltip():
+            nonlocal built
+            if built:
+                return False  # EA also returns False for an already materialised tooltip.
+            built = True
+            if obj._ui_metadata_stack is None:
+                obj._ui_metadata_stack = [(0, 'hover_tip', style, False)]
+            for handle, (name, value) in enumerate(fields, 1):
+                obj._ui_metadata_stack.append((handle, name, value, False))
+            return True
+
+        obj.on_hovertip_requested = Mock(side_effect=build_tooltip)
+        self.objects[ident] = obj
+        return obj
+
+    def row(self, obj, label='Item'):
+        entry = scanner.Entry(obj.id, False, label, 0, 4, 0, 0, 'misc', 'MISC')
+        return scanner._entry_parts(entry, 0, 1)
+
+    def test_single_portion_and_drink_have_quality_without_a_servings_statistic(self):
+        for label, tier in (('Single plate', 1), ('Drink', 3)):
+            with self.subTest(label=label):
+                obj = self.object(101, 2, [('quality', tier)], crafted=True)
+                parts = self.row(obj, label)
+                obj.on_hovertip_requested.assert_called()
+                self.assertIn(('objectquality', obj.id), parts)
+                self.assertNotIn('servings:', ''.join(p for p in parts if isinstance(p, str)))
+
+    def test_crafted_platter_keeps_servings_with_or_without_quality(self):
+        for tier, count in ((0, 0), (2, 6)):
+            with self.subTest(tier=tier):
+                obj = self.object(102, 2, [('quality', tier)], crafted=True, servings=count)
+                parts = self.row(obj)
+                self.assertIn(', servings: {}'.format(count), parts)
+                self.assertEqual(('objectquality', obj.id) in parts, bool(tier))
+
+    def test_servings_read_failure_does_not_discard_quality(self):
+        obj = self.object(105, 2, [('quality', 2)], crafted=True, servings=6)
+        obj.get_tracker = Mock(side_effect=ValueError('servings unavailable'))
+        parts = self.row(obj)
+        self.assertIn(('objectquality', obj.id), parts)
+        self.assertNotIn('servings:', ''.join(p for p in parts if isinstance(p, str)))
+
+    def test_non_crafted_fish_retains_its_tokenised_freshness(self):
+        freshness = SimpleNamespace(hash=0x054DDA26, tokens=[object()])
+        obj = self.object(103, 4, [('quality_description', freshness)])
+        # The style may already be present before the first hover builds the fields.
+        obj._ui_metadata_stack = [(0, 'hover_tip', 4, False)]
+        self.assertIn(('objectquality', obj.id), self.row(obj))
+        self.assertIn(('objectquality', obj.id), self.row(obj))
+
+    def test_objects_without_displayed_quality_need_no_client_request(self):
+        rarity = SimpleNamespace(hash=0x0499D574, tokens=[object()])
+        for style, fields, valid in ((1, [], True), (4, [('rarity_text', rarity)], True),
+                                     (1, [('quality', 3), ('quality', 0)], True),
+                                     (3, [('quality', 2)], True),
+                                     (0, [('quality', 2)], True), (6, [('quality', 1)], True),
+                                     (2, [('quality', 1)], False)):
+            with self.subTest(style=style, fields=fields, valid=valid):
+                obj = self.object(104, style, fields, valid=valid)
+                with patch.object(scanner, '_send_ui') as send, patch.object(scanner.speech, 'speak') as speak:
+                    scanner._speak_parts(self.row(obj, 'Item'))
+                    send.assert_not_called()
+                    speak.assert_called_once()
+                if not valid:
+                    obj.on_hovertip_requested.assert_not_called()
+
+    def test_quality_response_is_per_announcement_and_keeps_the_games_words(self):
+        ident = 18446744073709551611  # Would lose precision if represented as a double.
+        parts = ['Plate', ('objectquality', ident), ', here']
+        with patch.object(scanner, '_send_ui') as send, patch.object(scanner.threading, 'Timer'), \
+                patch.object(scanner.speech, 'speak') as speak:
             scanner._speak_parts(parts)
-            self.assertEqual({args[0] for args, _ in send.call_args_list},
-                             {'A11y|loc|{0}|{0}'.format(key) for key in (0x01E8983B, 0xD65A6280)})
-            scanner.a11y_loc_enc('32020539|Quality%3A')
+            first = send.call_args[0][0].split('|')
+            self.assertEqual(first[:2], ['A11y', 'objectquality'])
+            self.assertEqual(first[3], str(ident))
+            scanner._speak_parts(parts)
+            seq = send.call_args[0][0].split('|')[2]
+            self.assertNotEqual(seq, first[2])
+            scanner.a11y_objectquality_enc('{}|{}|Old'.format(first[2], ident))
+            scanner.a11y_objectquality_enc('{}|{}|Other'.format(seq, ident - 1))
             speak.assert_not_called()
-            scanner.a11y_loc_enc('3596247680|%3Cspan%20class%3D%22twostar%22%3ENormal%3C%2Fspan%3E')
-            speak.assert_called_once_with('Food, servings: 3, Quality: Normal, here', source='widget')
-            scanner._loc_cache.clear()
+            text = 'Jakość: Wspaniała!'
+            formatted = 'Jakość: <span class="threestar">Wspaniała!</span>'
+            scanner.a11y_objectquality_enc('{}|{}|{}'.format(seq, ident, quote(formatted, safe='')))
+            speak.assert_called_once_with('Plate, ' + text + ', here', source='widget')
+            scanner.a11y_objectquality_enc('{}|{}|Duplicate'.format(seq, ident))
+            self.assertEqual(speak.call_count, 1)
+
+    def test_quality_timeout_reads_the_rest_and_ignores_late_replies(self):
+        parts = ['Platter, servings: 3', ('objectquality', 33), ', here']
+        with patch.object(scanner, '_send_ui') as send, patch.object(scanner.threading, 'Timer') as timer, \
+                patch.object(scanner.speech, 'speak') as speak:
             scanner._speak_parts(parts)
-            scanner._finish(scanner._loc_waiting[0xD65A6280][0])
-            speak.assert_called_with('Food, servings: 3, here', source='widget')
+            seq = send.call_args[0][0].split('|')[2]
+            _, expire, args = timer.call_args[0]
+            expire(*args)
+            speak.assert_called_once_with('Platter, servings: 3, here', source='widget')
+            scanner.a11y_objectquality_enc('{}|33|Too%20late'.format(seq))
+            self.assertEqual(speak.call_count, 1)
+
+    def test_name_and_quality_are_spoken_once_in_either_reply_order(self):
+        parts = [('catalog', 7), ('objectquality', 35), ', here']
+        for quality_first in (True, False):
+            with self.subTest(quality_first=quality_first), \
+                    patch.dict(scanner._loc_cache, {}, clear=True), \
+                    patch.dict(scanner._loc_waiting, {}, clear=True), \
+                    patch.object(scanner, '_send_ui') as send, patch.object(scanner.threading, 'Timer'), \
+                    patch.object(scanner.speech, 'speak') as speak:
+                scanner._speak_parts(parts)
+                messages = [args[0] for args, _ in send.call_args_list]
+                self.assertIn('A11y|loc|7|7', messages)
+                request = next(msg for msg in messages if msg.startswith('A11y|objectquality|'))
+                seq = request.split('|')[2]
+                replies = [(scanner.a11y_loc_enc, '7|Drink'),
+                           (scanner.a11y_objectquality_enc, '{}|35|Quality%3A%20Normal'.format(seq))]
+                if quality_first:
+                    replies.reverse()
+                (first, first_args), (second, second_args) = replies
+                first(first_args)
+                speak.assert_not_called()
+                second(second_args)
+                speak.assert_called_once_with('Drink, Quality: Normal, here', source='widget')
+
+    def test_lost_name_reply_is_requested_again_after_timeout(self):
+        parts = ['Object ', ('loc', 71)]
+        with patch.dict(scanner._loc_waiting, {}, clear=True), patch.dict(scanner._loc_cache, {}, clear=True), \
+                patch.object(scanner, '_send_ui') as send, patch.object(scanner.threading, 'Timer') as timer, \
+                patch.object(scanner.speech, 'speak') as speak:
+            scanner._speak_parts(parts)
+            send.assert_called_once_with('A11y|loc|71|71')
+            _, expire, args = timer.call_args[0]
+            expire(*args)
+            speak.assert_called_once_with('Object', source='widget')
+            send.reset_mock()
+            scanner._speak_parts(parts)
+            send.assert_called_once_with('A11y|loc|71|71')
+            scanner.a11y_loc_enc('71|Bowl')
+            speak.assert_called_with('Object Bowl', source='widget')
+            self.assertEqual(speak.call_count, 2)
+
+    def test_opening_a_menu_silences_an_unfinished_object_row(self):
+        parts = [('catalog', 71), ('objectquality', 35)]
+        for quality_already_received in (False, True):
+            with self.subTest(quality_already_received=quality_already_received), \
+                    patch.dict(scanner._loc_waiting, {}, clear=True), patch.dict(scanner._loc_cache, {}, clear=True), \
+                    patch.object(scanner, '_menu_open', False), patch.object(scanner.availability, 'pause'), \
+                    patch.object(scanner, '_send_ui') as send, patch.object(scanner.threading, 'Timer') as timer, \
+                    patch.object(scanner.speech, 'speak') as speak:
+                scanner._speak_parts(parts)
+                request = next(call[0][0] for call in send.call_args_list
+                               if call[0][0].startswith('A11y|objectquality|'))
+                reply = '{}|35|Quality%3A%20Normal'.format(request.split('|')[2])
+                if quality_already_received:
+                    scanner.a11y_objectquality_enc(reply)
+                scanner.note_menu_open()
+                # A delayed reply can arrive after the player has already closed the menu.
+                scanner.a11y_menuclosed()
+                if not quality_already_received:
+                    scanner.a11y_objectquality_enc(reply)
+                scanner.a11y_loc_enc('71|Drink')
+                _, expire, args = timer.call_args[0]
+                expire(*args)
+                speak.assert_not_called()
 
 
 class TreeTests(unittest.TestCase):

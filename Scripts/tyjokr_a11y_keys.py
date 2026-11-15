@@ -385,6 +385,8 @@ def apply_scanner_setting(announce_change=False):
     if not _scanner_effective():
         _scanner_suspended = False
         _scanner_pending_announce = False
+        if announce_change or _scanner_live:
+            _scanner_call('discard_pending_quality')
         if _scanner_live:
             _scanner_live = False
             _scanner_call('set_camera_live', False)   # release at once, before Flash reports
@@ -520,6 +522,7 @@ def a11y_scannerowner(state: str = '0', _connection=None):
         return True
     if not owner:
         if changed:
+            _scanner_call('discard_pending_quality')
             _scanner_suspended = not _scanner_pending_announce
         return True
     if not changed and not _scanner_pending_announce and not _scanner_suspended:
