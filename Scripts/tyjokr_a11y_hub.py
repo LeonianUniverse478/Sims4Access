@@ -222,6 +222,63 @@ def _queue_detail(info, interaction, state, position, total):
     return '. '.join(parts)
 
 
+def _quick_cancel_candidates(sim):
+    """Yield (id, cancelable, running, posture) in queue order."""
+    from protocolbuffers import Sims_pb2
+    seen = set()
+    icons = []
+    for icon in sim.ui_manager.get_interactions_gen():
+        if icon.canceled:
+            seen.add(icon.interaction_id)
+        else:
+            icons.append(icon)
+    if icons:
+        for icon in icons:
+            yield (icon.interaction_id, icon.user_cancelable,
+                   icon.ui_state != Sims_pb2.IQ_QUEUED, icon.is_visual_type_posture())
+        return
+
+    # A running activity can briefly have no client queue icon. Use the
+    # same visual type as EA and count an action present in both lists once.
+    from itertools import chain
+    queue = sim.queue
+    if queue is None:
+        return
+    running = chain((queue.running,), sim.si_state.sis_actor_gen())
+    for is_running, actions in ((True, running), (False, queue)):
+        for action in actions:
+            if action is None or action.is_finishing or action.id in seen:
+                continue
+            if not (action.visible_as_interaction or action.user_cancelable):
+                continue
+            seen.add(action.id)
+            visual_type, _ = action.get_interaction_queue_visual_type()
+            yield action.id, action.user_cancelable, is_running, visual_type == Sims_pb2.Interaction.POSTURE
+
+
+def cancel_from_scanner(all_actions):
+    import services
+    sim = services.get_active_sim()
+    if sim is None:
+        _say('load a household first')
+        return False
+    candidates = list(_quick_cancel_candidates(sim))
+    if all_actions:
+        ids = [action_id for action_id, cancelable, _, _ in candidates if cancelable]
+        if not ids:
+            _say('queue cannot cancel' if candidates else 'queue empty')
+            return False
+    else:
+        running = [action_id for action_id, cancelable, active, posture in candidates
+                   if cancelable and active and not posture]
+        if not running:
+            _say('no current action')
+            return False
+        primary = getattr(getattr(sim.queue, 'running', None), 'id', None)
+        ids = (primary if primary in running else running[0],)
+    return cancel_actions(sim.id, ids)
+
+
 def action_queue():
     """Control Alt Q and the accessibility menu row: the active Sim's action
     queue as a native picker. Enter on a row cancels that action the way
