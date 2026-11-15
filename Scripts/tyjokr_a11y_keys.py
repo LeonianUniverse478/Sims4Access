@@ -464,7 +464,7 @@ def _scanner_key(intent, epoch):
         _log_route('dropped: the scanner no longer owns input', 'scanner ' + intent)
         return
     if intent in ('cancelcurrent', 'cancelall'):
-        if _scanner_live and _in_live() and not blocking_active():
+        if _in_live() and not blocking_active():
             import tyjokr_a11y_hub as hub
             hub.cancel_from_scanner(intent == 'cancelall')
         return
@@ -564,9 +564,8 @@ def _scanner_call(name, *args):
 
 @sims4.commands.Command('a11y.scannerlive', command_type=sims4.commands.CommandType.Live)
 def a11y_scannerlive(state: str = '0', _connection=None):
-    """Flash: Live mode with scanner mode on, whatever owns the keys (menus
-    and text fields keep it on; Build, CAS and the main menu turn it off).
-    Drives the camera follow; only a change does anything."""
+    """Flash camera-follow eligibility. First-person view turns it off even
+    while the Live scanner owns the keys."""
     global _scanner_live
     if isinstance(state, int) and not isinstance(state, bool) and state in (0, 1):
         state = str(state)
@@ -1282,7 +1281,7 @@ def _plain_message(vk, ctrl=False, alt=False, shift=False):
         return 'A11yNeeds'
     if ctrl or alt:
         return None
-    if vk == 0x51 and _scanner_live and _scanner_routing() and not blocking_active():
+    if vk == 0x51 and _scanner_routing() and not blocking_active():
         return 'A11yScanner:cancelall' if shift else 'A11yScanner:cancelcurrent'
     if vk == 0x09 and (not _editing_active or _modal_active):
         if shift and not _modal_active:

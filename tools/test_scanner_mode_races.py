@@ -43,6 +43,19 @@ class OwnerRaceTests(fixture.ScannerModeBase):
                 keys.a11y_modalstate(state)
                 self.assertIsNone(keys._plain_message(0x51))
 
+    def test_quick_cancel_works_in_first_person_while_the_scanner_owns_input(self):
+        self.turn_on_and_confirm()
+        keys.a11y_scannerlive('1')
+        keys.a11y_scannerlive('0')  # First-person view turns off camera follow.
+        self.scanner.set_camera_live.assert_called_with(False)
+        with patch.object(hub, 'cancel_from_scanner') as cancel:
+            run = fixture.keyboard_env.KeyboardTests.run_samples
+            run(self, [{0x51: 0x8001}, {}])
+            cancel.assert_called_once_with(False)
+            cancel.reset_mock()
+            run(self, [{0x10: 0x8000, 0x51: 0x8001}, {}])
+            cancel.assert_called_once_with(True)
+
     def test_queued_arrow_does_not_cross_owner_loss_and_return(self):
         self.turn_on_and_confirm()
         keys._send('A11yScanner:next')
