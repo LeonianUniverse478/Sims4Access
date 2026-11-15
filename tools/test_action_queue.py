@@ -89,6 +89,52 @@ class ActionQueueTests(unittest.TestCase):
         self.assertEqual(self.windows[0][0], 'action queue')
         return self.windows[0][1]
 
+    def test_quick_cancel_current_prefers_primary_and_all_includes_waiting(self):
+        actions = {i: Interaction(cancelable=i != 4) for i in range(1, 6)}
+        self.sim = Sim([info(1, 'Sit', RUNNING, posture=True), info(2, 'Talk', RUNNING),
+                        info(3, 'TV', RUNNING), info(4, 'Fixed', QUEUED, cancelable=False),
+                        info(5, 'Eat', QUEUED)], actions)
+        self.sim.queue = types.SimpleNamespace(running=types.SimpleNamespace(id=3))
+        self.assertTrue(hub.cancel_from_scanner(False))
+        self.assertEqual([n for n, a in actions.items() if a.cancels], [3])
+        self.sim.queue.running = types.SimpleNamespace(id=1)
+        self.assertTrue(hub.cancel_from_scanner(False))
+        self.assertTrue(actions[2].cancels)
+        self.assertTrue(hub.cancel_from_scanner(True))
+        self.assertEqual([len(a.cancels) for a in actions.values()], [1, 2, 2, 0, 1])
+
+    def test_no_icons_falls_back_to_live_actions_once_and_ignores_posture(self):
+        class Queue(list):
+            pass
+        actions = {i: Interaction() for i in range(1, 6)}
+        for i, action in actions.items():
+            action.id = i
+            action.visible_as_interaction = True
+            action.is_finishing = i == 4
+            action.get_interaction_queue_visual_type = lambda n=i: ('posture' if n == 1 else 'simple', None)
+        icons = []
+        self.sim = Sim(icons, actions)
+        self.sim.queue = Queue([actions[2], actions[3], actions[4]])
+        self.sim.queue.running = actions[1]
+        self.sim.si_state = types.SimpleNamespace(sis_actor_gen=lambda: iter((actions[1], actions[2])))
+        with patch.object(PB.Sims_pb2, 'Interaction', types.SimpleNamespace(POSTURE='posture'), create=True):
+            self.assertTrue(hub.cancel_from_scanner(False))
+            self.assertEqual([len(a.cancels) for a in actions.values()], [0, 1, 0, 0, 0])
+            # An already-canceled icon must not hide other activities or
+            # resurrect the corresponding action before the Sim drops it.
+            icons.append(info(5, 'Old', QUEUED, canceled=True))
+            self.sim.queue.append(actions[5])
+            self.assertTrue(hub.cancel_from_scanner(True))
+            self.assertEqual([len(a.cancels) for a in actions.values()], [1, 2, 1, 0, 0])
+
+    def test_quick_cancel_reports_waiting_only_and_no_sim(self):
+        self.sim = Sim([info(1, 'Wait', QUEUED)], {1: Interaction()})
+        self.assertFalse(hub.cancel_from_scanner(False))
+        self.assertEqual(self.spoken[-1], lang.t('no current action'))
+        self.sim = None
+        self.assertFalse(hub.cancel_from_scanner(True))
+        self.assertEqual(self.spoken[-1], lang.t('load a household first'))
+
     def test_q_is_the_queue_chord_and_is_described(self):
         self.assertEqual(keys.CHORDS[0x51], ('queue', False))
         self.assertEqual(keys.CHORD_NAMES[0x51], 'Q')
