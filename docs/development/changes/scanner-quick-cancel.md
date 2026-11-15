@@ -18,4 +18,10 @@ checks that its existing keys are present, allowing other bindings to be
 added. The shortcut help test counts and checks the new spoken entry.
 This standalone change has not been tested in a live game session.
 
+Rebased onto the 18 November dev build. Scanner ownership remains separate
+from camera-follow eligibility, so first-person view does not disable Q or
+Shift+Q. Offline regression tests retain first-person coverage and verify
+that an owner transition, native dialog, Build mode or Ctrl/Alt chord cannot
+cancel an interaction through these plain-key shortcuts.
+
 Contributor: Ar-Anaviel.
