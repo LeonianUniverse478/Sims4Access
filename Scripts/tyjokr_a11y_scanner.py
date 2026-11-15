@@ -159,6 +159,7 @@ _loc_cache = {}        # hash -> text
 _loc_waiting = {}      # hash -> [_Pending]
 _loc_lock = threading.Lock()
 _announce_seq = [0]
+_quality_waiting = None   # Only the latest scanner row can use an object-specific reply.
 
 
 class _Pending(object):
@@ -166,6 +167,8 @@ class _Pending(object):
         self.parts = parts
         self.seq = seq
         self.missing = set()
+        self.quality_id = None
+        self.quality_text = ''
         self.timer = None
         self.done = False
 
@@ -185,9 +188,6 @@ def _send_ui(name):
 
 _QUANTITY_FORM = re.compile(r'\{([SYP])\.([^{}]+)\}')
 _QUANTITY_GROUP = re.compile(r'\{[SYP]\.[^{}]+\}(?:[ \t]*\{[SYP]\.[^{}]+\})+')
-# Gameplay's HoverTipPanel resolves these KeysGP strings for the quality row.
-_QUALITY_HEADING = 0x01E8983B
-_QUALITY_LABELS = {1: 0x2B79C896, 2: 0xD65A6280, 3: 0xE7486BCE}
 
 
 def _catalog_name(text):
@@ -202,27 +202,32 @@ def _catalog_name(text):
     return _QUANTITY_GROUP.sub(singular, text)
 
 
-def _finish(pending):
+def _finish(pending, discard=False):
+    global _quality_waiting
     with _loc_lock:
         if pending.done:
             return
         pending.done = True
+        if _quality_waiting is pending:
+            _quality_waiting = None
         if pending.timer is not None:
             pending.timer.cancel()
-        if pending.seq != _announce_seq[0]:
+        for key in pending.missing:
+            waiting = _loc_waiting.get(key)
+            if waiting and pending in waiting:
+                waiting.remove(pending)
+                if not waiting:
+                    del _loc_waiting[key]
+        if discard or pending.seq != _announce_seq[0]:
             return   # superseded by a newer announcement
         pieces = []
         for part in pending.parts:
-            if isinstance(part, tuple):
+            if isinstance(part, tuple) and part[0] == 'objectquality':
+                if pending.quality_text:
+                    pieces.append(', ' + pending.quality_text)
+            elif isinstance(part, tuple):
                 resolved = _loc_cache.get(part[1], '')
-                if part[0] == 'quality':
-                    from tyjokr_a11y_narrator import _clean_glyphs
-                    value = _clean_glyphs(resolved)
-                    if value:
-                        heading = _clean_glyphs(_loc_cache.get(_QUALITY_HEADING, ''))
-                        pieces.append(', ' + (heading + ' ' if heading else '') + value)
-                else:
-                    pieces.append(_catalog_name(resolved) if part[0] == 'catalog' else resolved)
+                pieces.append(_catalog_name(resolved) if part[0] == 'catalog' else resolved)
             else:
                 pieces.append(part)
     text = ''.join(pieces).replace(' ,', ',').replace('  ', ' ').strip()
@@ -232,32 +237,78 @@ def _finish(pending):
         speech.speak(text, source='widget')
 
 
+def discard_pending_quality():
+    """Leave a pending object row silent after the scanner loses focus."""
+    with _loc_lock:
+        pending = _quality_waiting
+    if pending is not None:
+        _finish(pending, discard=True)
+
+
+def _quality_timeout(pending):
+    # Selection changes and client replies run on the simulation thread.
+    # A timer must not speak an old row after a newer selection or a menu.
+    if not pump.post(_finish, pending):
+        _finish(pending, discard=True)
+
+
 def _speak_parts(parts):
-    """Speak a list of strings and ('loc', hash) parts once the client has
-    resolved every key (or the timeout passes). Simulation thread only."""
+    """Resolve the row's strings and optional object quality together. Simulation thread only."""
+    global _quality_waiting
     with _loc_lock:
         _announce_seq[0] += 1
         pending = _Pending(list(parts), _announce_seq[0])
         for part in pending.parts:
-            if isinstance(part, tuple):
-                keys = (part[1], _QUALITY_HEADING) if part[0] == 'quality' else (part[1],)
-                pending.missing.update(key for key in keys if key and key not in _loc_cache)
-        if not pending.missing:
-            need_send = []
-        else:
-            need_send = []
-            for key in pending.missing:
-                waiting = _loc_waiting.setdefault(key, [])
-                if not waiting:
-                    need_send.append(key)
-                waiting.append(pending)
-            pending.timer = threading.Timer(_LOC_TIMEOUT, _finish, (pending,))
+            if isinstance(part, tuple) and part[0] == 'objectquality':
+                pending.quality_id = part[1]
+            elif isinstance(part, tuple) and part[1] and part[1] not in _loc_cache:
+                pending.missing.add(part[1])
+        need_send = []
+        for key in pending.missing:
+            waiting = _loc_waiting.setdefault(key, [])
+            if not waiting:
+                need_send.append(key)
+            waiting.append(pending)
+        _quality_waiting = pending if pending.quality_id is not None else None
+        if pending.quality_id is not None:
+            pending.missing.add('objectquality')
+        if pending.missing:
+            expire = _quality_timeout if pending.quality_id is not None else _finish
+            pending.timer = threading.Timer(_LOC_TIMEOUT, expire, (pending,))
             pending.timer.daemon = True
             pending.timer.start()
     for key in need_send:
         _send_ui('A11y|loc|{}|{}'.format(key, key))
+    if pending.quality_id is not None:
+        if not _send_ui('A11y|objectquality|{}|{}'.format(pending.seq, pending.quality_id)):
+            _accept_quality(pending.seq, pending.quality_id, '')
     if not pending.missing:
         _finish(pending)
+
+
+def _accept_quality(seq, object_id, value):
+    with _loc_lock:
+        pending = _quality_waiting
+        if pending is None or pending.seq != seq or pending.quality_id != object_id:
+            return
+        if 'objectquality' not in pending.missing:
+            return
+        pending.quality_text = value
+        pending.missing.discard('objectquality')
+        ready = not pending.missing
+    if ready:
+        _finish(pending)
+
+
+@sims4.commands.Command('a11y.objectquality_enc', command_type=sims4.commands.CommandType.Live)
+def a11y_objectquality_enc(text: str = '', _connection=None):
+    from tyjokr_a11y_narrator import _clean_glyphs, _decode_percent
+    try:
+        seq, object_id, body = text.split('|', 2)
+        _accept_quality(int(seq), int(object_id), _clean_glyphs(_decode_percent(body)).strip())
+    except (TypeError, ValueError):
+        pass
+    return True
 
 
 @sims4.commands.Command('a11y.loc_enc', command_type=sims4.commands.CommandType.Live)
@@ -919,28 +970,27 @@ def _place_part(entry):
     return where
 
 
-def _food_quality_key(obj):
-    from objects.components import types
-    from objects.hovertip import TooltipFieldsComplete
-    tooltip = obj.get_component(types.TOOLTIP_COMPONENT)
-    if tooltip is None:
-        return None
-
-    def field_value(field):
-        value = tooltip.get_tooltip_field(field)
-        if value is None:
-            # Before the first mouse hover the crafting component has supplied
-            # its fields, but the client metadata handles may not exist yet.
-            supplied = tooltip._external_field_to_data.get(field.name)
-            if supplied is not None:
-                value = supplied.field_data
-        return value
-
-    description = field_value(TooltipFieldsComplete.quality_description)
-    if description is not None and description.hash:
-        # The loc channel accepts a single STBL key without formatting tokens.
-        return None if description.tokens else description.hash
-    return _QUALITY_LABELS.get(field_value(TooltipFieldsComplete.quality))
+def _quality_candidate(obj):
+    """Prepare the selected object's native hover data; ordinary objects need no UI round trip."""
+    if not getattr(obj, 'valid_for_distribution', False):
+        return False
+    from objects.hovertip import HovertipStyle
+    # EA's create_hovertip uses this hook. Components handle repeat requests;
+    # a false return can mean the metadata is already there. Do not show a tip.
+    obj.on_hovertip_requested()
+    # As in ClientObjectMixin.update_ui_metadata, the last provider wins.
+    fields = {name: value for _, name, value, _ in (obj._ui_metadata_stack or ())
+              if name in ('hover_tip', 'quality', 'quality_description')}
+    style = fields.get('hover_tip', getattr(obj, 'hover_tip', None))
+    if style in (HovertipStyle.HOVER_TIP_DISABLED, HovertipStyle.HOVER_TIP_ICON_TITLE_DESCRIPTION):
+        return False
+    tier = fields.get('quality')
+    if style == HovertipStyle.HOVER_TIP_GARDENING and not tier:
+        return False  # Wildness is displayed in the name, not in a quality row.
+    description = fields.get('quality_description')
+    if getattr(description, 'hash', 0):
+        return True
+    return style != HovertipStyle.HOVER_TIP_GARDENING and tier in (1, 2, 3)
 
 
 def _serving_details(obj):
@@ -952,14 +1002,7 @@ def _serving_details(obj):
     if tracker is None or not tracker.has_statistic(statistic):
         return []
     count = max(0, int(tracker.get_value(statistic)))
-    details = [', ' + lang.t('servings count').format(count)]
-    try:
-        key = _food_quality_key(obj)
-        if key:
-            details.append(('quality', key))
-    except Exception as ex:
-        speech.log_line('scanner: food quality unavailable: {!r}'.format(ex))
-    return details
+    return [', ' + lang.t('servings count').format(count)]
 
 
 def _entry_parts(entry, index, total):
@@ -969,10 +1012,16 @@ def _entry_parts(entry, index, total):
         status = ', ' + entry.role + status
     parts = [_name_part(entry)]
     if not entry.is_sim:
+        obj = _object_for_entry(entry)
         try:
-            parts.extend(_serving_details(_object_for_entry(entry)))
+            parts.extend(_serving_details(obj))
         except Exception as ex:
             speech.log_line('scanner: serving details unavailable: {!r}'.format(ex))
+        try:
+            if _quality_candidate(obj):
+                parts.append(('objectquality', entry.obj_id))
+        except Exception as ex:
+            speech.log_line('scanner: object quality unavailable: {!r}'.format(ex))
     parts.extend([cleanliness.suffix(entry) + status + ', ' + _place_part(entry),
                   '. {} {} {}.'.format(index + 1, lang.t('of'), total)])
     return parts
@@ -1419,6 +1468,7 @@ def _log_route(reason, intent):
 def note_menu_open():
     """Any pie menu opened (ours or a mouse click)."""
     global _menu_open
+    discard_pending_quality()
     if not _menu_open:
         speech.log_line('scanner: menu flag set')
     _menu_open = True
@@ -1463,6 +1513,7 @@ def _install_zone_hook():
     original = zone.Zone.on_loading_screen_animation_finished
 
     def a11y_scanner_on_loading_screen_animation_finished(self, *args, **kwargs):
+        global _quality_waiting
         global _by_group, _groups, _menu_open, _last_scan, _refresh_requested, _last_activity
         global _tree_level
         result = original(self, *args, **kwargs)
@@ -1488,6 +1539,8 @@ def _install_zone_hook():
         except Exception as ex:
             speech.log_line('scanner: refresh alarm failed: {!r}'.format(ex))
         with _loc_lock:
+            _announce_seq[0] += 1
+            _quality_waiting = None
             _loc_cache.clear()
             _loc_waiting.clear()
         # Re-assert the Flash game-message hook after every load.

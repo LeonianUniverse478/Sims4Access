@@ -66,7 +66,8 @@ class CleaningTests(unittest.TestCase):
   return namespace[name]
  def test_scanner_preserves_localized_name_availability_and_place(self):
   self.set(value(15129,15131));self.entry.availability='locked';self.entry.role=''
-  ns={'lang':sys.modules['tyjokr_a11y_lang'],'_name_part':lambda e:('loc',123),'_place_part':lambda e:'here'}
+  ns={'lang':sys.modules['tyjokr_a11y_lang'],'_name_part':lambda e:('loc',123),'_place_part':lambda e:'here',
+   '_object_for_entry':lambda e:None,'_serving_details':lambda obj:[],'_quality_candidate':lambda obj:False}
   parts=self.production('_entry_parts',ns)(self.entry,0,1)
   self.assertEqual(parts[0],('loc',123));self.assertEqual(parts[1],', dirty, scanner unavailable, here')
  def test_group_preview_also_announces_condition(self):
