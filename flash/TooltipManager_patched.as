@@ -3165,6 +3165,12 @@ package olympus.core
 
       public function A11yGuardForBinding(key:int, modifier:int) : Boolean
       {
+         if(key == 81)
+         {
+            if(!this.mA11yScannerMode) { return false; }
+            this.A11yModalFrame();
+            return this.A11yScannerOwner();
+         }
          // Shift+Tab belongs to EA's first-person camera in the Live world.
          // Only an actual menu/HUD owner borrows it for backward navigation.
          if(key == 9 && modifier == 1 && !this.mA11yStartupActive && this.A11yWorldHudMode() == 1)
@@ -3188,6 +3194,9 @@ package olympus.core
          {
             try
             {
+               // Q is dispatched once by the keyboard poller. The native
+               // binding only suppresses the game's action for this press.
+               if(key == 81) { return false; }
                // A quick Shift+Tab can finish before Python samples Shift.
                // Preserve the modifier attached to EA's actual key binding;
                // navigation still happens once through the existing poller.
@@ -3215,7 +3224,7 @@ package olympus.core
          var triggerClass:Object = null;
          var manager:Object = null;
          var action:Object = null;
-         var keys:Array = [8,9,13,27,32,37,38,39,40,78,33,34,36,46,49,50,51,52,53,54,82];
+         var keys:Array = [8,9,13,27,32,37,38,39,40,78,33,34,36,46,49,50,51,52,53,54,81,82];
          var i:int = 0;
          var modifier:int = 0;
          try
@@ -3227,7 +3236,7 @@ package olympus.core
             while(i < keys.length)
             {
                modifier = 0;
-               while(modifier < (keys[i] == 9 || keys[i] == 82 ? 2 : 1))
+               while(modifier < (keys[i] == 9 || keys[i] == 81 || keys[i] == 82 ? 2 : 1))
                {
                   action = actionClass["WhenTriggered"](triggerClass["FromKeyBinding"](keys[i],keys[i] == 78 ? 3 : modifier));
                   action["SetPriority"](1000000);
