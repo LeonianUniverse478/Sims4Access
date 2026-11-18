@@ -176,6 +176,12 @@ confirming. Cancel Moving returns without completing the move.
 
 BUILD MODE
 
+With a catalog object selected, leave the catalog controls and press
+Ctrl+Alt+H, then choose Guided placement. Pick a floor and a room or
+lot area. The game searches that area for a valid fit and charges if
+it places the object. Undo last accessible placement refunds it.
+The same Guided placement option is in the Alt+B Build Helper.
+
 With Build controls on, press F2 to enter Build mode. Choose an object in
 the Build catalog, then press Ctrl+Alt+B. The plain arrow keys move one
 tile at a time and read what is there, walls and doors, and whether the

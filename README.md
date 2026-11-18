@@ -67,6 +67,10 @@ Download **TS4_Access_Update.zip** from the latest release, then:
   moving furniture, wall and room reading, target layers, room labels, and
   hanging wall objects (test feature).
 - **Holiday announcements** (Seasons), with each tradition and what to do.
+- **Guided placement** and a grouped Accessibility menu with a simpler Live
+  scanner (Yourself, Sims, Objects).
+- **House building, roofs, basements and many more readable screens** by
+  DaRainbowGirlXX.
 - **Inventory selling**, a Brief verbosity setting, a logging toggle
   (Ctrl+Alt+L), labelled household transfers and moves, businesses (including
   mod businesses), and keyboard hiring.

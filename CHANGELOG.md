@@ -9,6 +9,80 @@ Install or update with TS4AccessUpdater.exe from the
 
 ---
 
+## build-2026-11-18_091845 (2026-11-18)
+
+### Live mode: simpler scanner and a grouped Accessibility menu
+
+- The scanner now starts with three groups: **Yourself**, **Sims** and
+  **Objects**. Objects are sorted inside by the game's own labels, as before.
+- The Accessibility menu (Ctrl+Alt+H) is grouped: Yourself, Needs, Mood and
+  moodlets, Sims, Nearby objects, Inventory, Places (travel, calendar,
+  events), Home and lot, Skills, Wishes and aspirations, Relationships,
+  Career and Now (action queue, day and time). Everything that was there
+  before is still reachable, plus Travel and Photography controls.
+
+### Build mode: guided placement
+
+- Choose an object in the catalog, then pick **Guided placement** from the
+  Accessibility menu or Alt+B. Choose a floor, then a room or an area of the
+  lot, and TS4 Access finds a spot that fits there, tries several turns, and
+  only charges you once it is placed. Surface items go on a free spot that
+  suits them. Undo from the Accessibility menu refunds it.
+- The Build cursor and the game's own tools still work as before.
+
+### House building, roofs and basements (by DaRainbowGirlXX)
+
+- **Alt+B, Build my house** is now one builder: ready-made layouts or your
+  own square or rectangular house, stories, an optional basement and a name
+  for every room, with a review before anything is built.
+- **Detached buildings:** sheds, garages, party houses and winter gardens.
+- **Roof builder** (flat, gabled or hipped), a chimney assistant and a roof
+  level description.
+- **Basement assistant** (experimental), using the game's own Basement tool.
+  It can be switched off in Settings.
+- **Lot planning grid** and descriptions of buildings, rooms, pools and open
+  ground.
+- The build helper's mouse aiming now measures the actual game window and
+  display scaling, and checks the game still has focus before each click.
+- These replace Michael Maslo's earlier Build my house, roof and lot
+  description tools; his other Build helper tools are unchanged.
+
+### Furniture (by DaRainbowGirlXX)
+
+- **Chair snapping** (experimental): dining chairs snap to dining tables and
+  desk chairs to desks. Face the table, or focus it with 1, and press Enter.
+- Pressing 1 repeatedly picks out a piece of furniture and the things on it
+  separately, such as a TV and its stand; a chosen surface is used for
+  placing, and a full one refuses the purchase.
+
+### Menus and screens (by DaRainbowGirlXX)
+
+- **Game Options:** checkboxes, dropdowns and buttons work and are read.
+- **Needs** use occult need names; Needs, Simology and Aspirations move more
+  smoothly; occult ranks and abilities are reachable.
+- **Purchases** say why Done is unavailable and expose quantity controls.
+- **Social Bunny**, **Photography filters**, **wedding venues**, **clubs**,
+  **Gallery**, **rental and household cards** are reachable.
+- **Manage Worlds:** pick individual apartment units and browse rental
+  buildings.
+- **Main-menu scenarios** are readable: description, difficulty, goals and
+  Play.
+- **Events:** the current event goals are listed under the running event.
+
+### Household (by DaRainbowGirlXX)
+
+- The scanner says when an object is **dirty** or **dusty**.
+- **Floor actions here** (Accessibility menu, Home and lot) opens the floor
+  menu where your Sim stands, for vacuuming and the like.
+- **Away actions** for household Sims who are elsewhere.
+
+### Fixes
+
+- The Windows fallback voice can no longer leave a PowerShell process
+  running after the game closes or crashes (DaRainbowGirlXX).
+
+---
+
 ## build-2026-11-12_220652 (2026-11-12)
 
 ### Updated for the game patch
