@@ -175,28 +175,6 @@ def floor_height(x, z, level):
         return terrain.get_terrain_height(x, z) + 3.0 * level
 
 
-def project(x, z, level, timeout=2.5, height=0.0):
-    """Runs in a worker thread. Returns (stage_x, stage_y) or None."""
-    import services
-    ev = threading.Event()
-    res = []
-    holder = {}
-
-    def start():
-        serial = _new_serial()
-        holder["serial"] = serial
-        _waiting[serial] = (ev, res)
-        y = floor_height(x, z, level) + height
-        _send_ui("A11y|buildaim|{}|{:.6f}|{:.6f}|{:.6f}|{}|{}".format(serial, x, y, z, level, services.current_zone_id()))
-    core.post(start)
-    ok = ev.wait(timeout)
-    _waiting.pop(holder.get("serial"), None)
-    if not ok or not res or res[0] == "fail":
-        core.log("project ({:.1f},{:.1f}) failed: {}".format(x, z, res))
-        return None
-    return (res[0], res[1])
-
-
 def cursor_off():
     def go():
         _send_ui("A11y|build|off|{}".format(_new_serial()))
@@ -216,40 +194,11 @@ def _user32():
 OFFSET = [0.0, 0.0]
 
 
-def _to_screen(sx, sy):
-    """TS4 Access reports interface (stage) coordinates. The interface is scaled by the Windows
-    display scale (125% on this laptop), while the mouse uses real pixels."""
-    import ctypes
-
-    class POINT(ctypes.Structure):
-        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
-    u = _user32()
-    hwnd = u.GetForegroundWindow()
-    try:
-        scale = u.GetDpiForWindow(hwnd) / 96.0 or 1.0
-    except Exception:
-        scale = 1.0
-    pt = POINT(int(round((sx + OFFSET[0]) * scale)), int(round((sy + OFFSET[1]) * scale)))
-    u.ClientToScreen(hwnd, ctypes.byref(pt))
-    return (pt.x, pt.y)
-
-
-def _mouse(flags, data=0):
+def _mouse_base(flags, data=0):
     _user32().mouse_event(flags, 0, 0, data, 0)
 
 
 LEFT_DOWN, LEFT_UP, WHEEL = 0x0002, 0x0004, 0x0800
-
-
-def move_to(x, y):
-    """Real mouse movement (absolute SendInput), which games see as raw mouse input,
-    unlike SetCursorPos. x, y in screen pixels."""
-    u = _user32()
-    u.SetCursorPos(int(x), int(y))
-    w, h = u.GetSystemMetrics(0), u.GetSystemMetrics(1)
-    nx = int(round(x * 65535.0 / max(1, w - 1)))
-    ny = int(round(y * 65535.0 / max(1, h - 1)))
-    u.mouse_event(0x8001, nx, ny, 0, 0)
 
 
 def screenshot(path, mark=None):
@@ -310,7 +259,7 @@ def screenshot(path, mark=None):
         return False
 
 
-def drag(a, b, shift=False):
+def _drag_base(a, b, shift=False):
     u = _user32()
     (ax, ay), (bx, by) = _to_screen(*a), _to_screen(*b)
     if shift:
@@ -331,7 +280,7 @@ def drag(a, b, shift=False):
     time.sleep(0.3)
 
 
-def click(a, shift=False):
+def _click_base(a, shift=False):
     u = _user32()
     (ax, ay) = _to_screen(*a)
     if shift:
@@ -370,12 +319,6 @@ def tap_scan(scan, extended=False):
         _user32().SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
         time.sleep(0.08)
 
-
-def park_mouse():
-    """Move the mouse to the middle of the view (screen edges scroll the camera) so hover effects do not confuse."""
-    u = _user32()
-    w = u.GetSystemMetrics(0)
-    u.SetCursorPos(w // 2, u.GetSystemMetrics(1) // 3)
 
 # ---------------------------------------------------------------- doing a pointing job
 
@@ -428,7 +371,7 @@ def overview_camera(points_world, level=0):
                                          camera_position=sims4.math.Vector3(cx, y + up, tz + up * 0.3))
 
 
-def point_and_act(points_world, level, action, describe, height=0.0, view=None, overview=False, focus_height=None):
+def _point_and_act_base(points_world, level, action, describe, height=0.0, view=None, overview=False, focus_height=None):
     """Worker thread only. Center the camera, project the points, do the mouse action.
     Returns True when the action was performed."""
     _hook_replies()
@@ -469,37 +412,6 @@ def point_and_act(points_world, level, action, describe, height=0.0, view=None, 
     return True
 
 
-def _stage_size():
-    """Width and height of the game window in interface (stage) units."""
-    import ctypes
-
-    class RECT(ctypes.Structure):
-        _fields_ = [("l", ctypes.c_long), ("t", ctypes.c_long), ("r", ctypes.c_long), ("b", ctypes.c_long)]
-    u = _user32()
-    hwnd = u.GetForegroundWindow()
-    rc = RECT()
-    u.GetClientRect(hwnd, ctypes.byref(rc))
-    try:
-        scale = u.GetDpiForWindow(hwnd) / 96.0 or 1.0
-    except Exception:
-        scale = 1.0
-    return ((rc.r - rc.l) / scale, (rc.b - rc.t) / scale)
-
-
-def _clear_of_panels(pt):
-    """False when a screen point is where a click would hit the interface instead of the lot: the
-    toolbar at the top, the catalog and the Cancel bar at the bottom (their top is about 73 percent
-    down the screen), or the edges, which scroll the camera."""
-    try:
-        (w, h) = _stage_size()
-    except Exception:
-        return True
-    if w < 100 or h < 100:
-        return True
-    (x, y) = pt
-    return 0.02 * w <= x <= 0.98 * w and 0.08 * h <= y <= 0.70 * h
-
-
 def on_main(fn, *args):
     """Worker thread only: run fn on the game thread and wait for its result."""
     ev = threading.Event()
@@ -525,30 +437,6 @@ def current_floor():
     if t is None:
         return None
     return int(round((t.y - terrain.get_terrain_height(t.x, t.z) - 1.0) / 3.0))
-
-
-def set_floor(level):
-    """Worker thread only. Go up or down floors with Page Up / Page Down (the game's floor keys)
-    until the game shows `level`. Returns True when it does."""
-    u = _user32()
-    for _ in range(3):
-        now = on_main(current_floor)
-        if now is None:
-            # The game has not told us where the camera is yet: start from the ground floor.
-            core.log("floor: unknown, assuming ground floor")
-            now = 0
-        if now == level:
-            return True
-        key = (0x21, 0x49) if level > now else (0x22, 0x51)     # Page Up / Page Down
-        for _i in range(abs(level - now)):
-            u.keybd_event(key[0], key[1], 1, 0)
-            time.sleep(0.05)
-            u.keybd_event(key[0], key[1], 3, 0)
-            time.sleep(1.2)
-        time.sleep(1.0)
-    ok = on_main(current_floor) == level
-    core.log("floor: wanted {} now {}".format(level, on_main(current_floor)))
-    return ok
 
 
 def undo():
@@ -732,7 +620,7 @@ def _do_room(w, d, e, n):
 
     threading.Thread(target=work, name="a11yplus_room", daemon=True).start()
 
-def room_worker(want, overview=False, tries=4, level=0):
+def _room_worker_base(want, overview=False, tries=4, level=0):
     """Worker thread only. Draw a room with the Room Tool (already chosen) from corner (want[0], want[1])
     to (want[2], want[3]), in meters from the west and north edges. The room tool snaps to the nearest
     grid corner; where a side meets an existing wall the game sometimes stops a meter short, so check
@@ -1168,7 +1056,7 @@ _bridge = {"pong": 0.0}
 _last_error = {"text": "", "at": 0.0}
 
 
-def _flash_reply(encoded=""):
+def _flash_reply_base(encoded=""):
     from urllib.parse import unquote
     text = unquote(str(encoded or ""))
     parts = text.split("|")
@@ -1318,29 +1206,8 @@ def open_catalog():
 
 
 def place_object_in_room():
-    if not in_build_mode():
-        core.speak("Go to Build mode first with F2.")
-        return
-    rows = _room_rows()
-    if not rows:
-        core.speak("There are no rooms yet.")
-        return
-
-    def got(room):
-        try:
-            import routing, services, terrain, sims4.math
-            import tyjokr_a11y_place as place
-            (x, z) = room.center
-            surface = routing.SurfaceIdentifier(services.current_zone_id(), room.level, routing.SurfaceType.SURFACETYPE_WORLD)
-            pos = sims4.math.Vector3(x, terrain.get_terrain_height(x, z, routing_surface=surface), z)
-            if not place.product():
-                core.speak("First choose an object in the catalog with Alt+B, Catalog.")
-                return
-            place.place(pos, room.level, surface)
-        except Exception:
-            core.log_exc("place in room")
-            core.speak("Could not place it.")
-    core.choose("Put it in which room", "TS4 Access finds a free spot near the middle of the room and buys it.", rows, got, tag="build")
+    import tyjokr_a11y_place as place
+    return place.guided_placement()
 
 
 def place_styled_room():
@@ -1393,15 +1260,132 @@ def _undo_spoken():
     core.speak("Undone.")
 
 
+@core.on_zone_started
+def _start():
+    _hook_product()
+
+
+# ------------------------------------------------- DaRainbowGirlXX's build engine work
+#
+# Merged 2026-11-14 (LeonianUniverse, lead developer). These used to be
+# replaced at game start by her modules; the engine now calls them directly.
+# tyjokr_a11y_build_coordinates measures the game client, window origin and
+# Windows scaling, and checks focus and pointer arrival before every click.
+
+
+def _display_observe(kind, data):
+    """a11y.inspect_display: log projections while the diagnostic is on."""
+    import tyjokr_a11y_display_diagnostic as display
+    display.observe(kind, data)
+
+
+def project(x, z, level, timeout=2.5, height=0.0):
+    """Runs in a worker thread. Returns (stage_x, stage_y) or None."""
+    import tyjokr_a11y_build_coordinates as coordinates
+    result = coordinates.project(x, z, level, timeout=timeout, height=height)
+    _display_observe('project', {'world_args': (x, z, level), 'height': height, 'reported_game_point': result})
+    return result
+
+
+def _to_screen(sx, sy):
+    import tyjokr_a11y_build_coordinates as coordinates
+    result = coordinates.to_screen(sx, sy)
+    _display_observe('convert', {'input': (sx, sy), 'output': result})
+    return result
+
+
+def _stage_size():
+    import tyjokr_a11y_build_coordinates as coordinates
+    return coordinates.stage_size()
+
+
+def move_to(x, y):
+    import tyjokr_a11y_build_coordinates as coordinates
+    return coordinates.move_to(x, y)
+
+
+def _mouse(flags, data=0):
+    """Button presses are checked (focus, Build state, pointer arrival); other
+    events go straight to _mouse_base."""
+    import tyjokr_a11y_build_coordinates as coordinates
+    return coordinates.mouse(flags, data)
+
+
+def click(a, shift=False):
+    import tyjokr_a11y_build_coordinates as coordinates
+    return coordinates._guarded_action(_click_base, (a,), shift)
+
+
+def drag(a, b, shift=False):
+    import tyjokr_a11y_build_coordinates as coordinates
+    return coordinates._guarded_action(_drag_base, (a, b), shift)
+
+
+def _clear_of_panels(pt):
+    import tyjokr_a11y_build_coordinates as coordinates
+    return coordinates.clear_of_panels(pt)
+
+
+def park_mouse():
+    import tyjokr_a11y_build_coordinates as coordinates
+    return coordinates.park_mouse()
+
+
+def set_floor(level):
+    """Floor changes checked against the game's current, lowest and highest floor."""
+    import tyjokr_a11y_build_helpers as helpers
+    return helpers.set_floor(level)
+
+
+def point_and_act(points_world, level, action, describe, height=0.0, view=None, overview=False, focus_height=None):
+    """Worker thread only. Overview jobs (whole rooms) use the house planner's
+    widening room framing; everything else centers the camera as before."""
+    if overview:
+        import tyjokr_a11y_house_planner as planner
+        return planner.overview_point_and_act(points_world, level, action, describe, height=height, overview=True)
+    return _point_and_act_base(points_world, level, action, describe, height=height, view=view,
+                               overview=False, focus_height=focus_height)
+
+
+def room_worker(want, overview=False, tries=4, level=0):
+    """Basement rooms (level below 0) go through the game's Basement tool."""
+    import tyjokr_a11y_basement as basement
+    return basement.room_worker(want, overview=overview, tries=tries, level=level)
+
+
+def _flash_reply(encoded=""):
+    import tyjokr_a11y_basement as basement
+    return basement.reply(encoded)
+
+
 @core.hotkey(ord("B"), "build helper")
 def open_menu():
+    """Alt+B. DaRainbowGirlXX's house, roof, basement and lot tools replace
+    Michael Maslo's Build my house, Put a roof on my house and Describe the lot
+    (Leo, 2026-11-14); his other tools stay."""
     _hook_product()
     if not in_build_mode():
         core.speak("The build helper works in Build mode. Press F2 first, on a laptop Fn+F2.")
         return
     tool = tool_name() or "nothing"
     import tyjokr_a11y_plus_house as house, tyjokr_a11y_plus_furnish as furnish, tyjokr_a11y_plus_decor as decor, tyjokr_a11y_plus_draw as draw
-    rows = []
+    import tyjokr_a11y_house_workflow as workflow, tyjokr_a11y_detached as detached, tyjokr_a11y_basement as basement
+    import tyjokr_a11y_roof_tools as roofs, tyjokr_a11y_lot_grid as lot_grid, tyjokr_a11y_house_planner as planner
+    rows = [
+        ("Build my house", "Ready-made or custom layouts, stories, basement and individual room names.", workflow.open_builder),
+        ("Build a detached small structure", "Shed, garage, enclosed winter garden, party house or custom one/two-room building at the current grid tile.",
+         detached.open_builder),
+        ("Basement assistant (experimental)", "Build a basement room or inspect native floors and existing rooms.", basement.open_assistant),
+        ("Accessible roof builder", "Flat, gabled or hipped roofs over the whole top floor or a named room.", roofs.roof_builder),
+        ("Describe roof level", "Rooms covered and fireplace alignment points below the roof.", roofs.describe_roof_level),
+        ("Chimney assistant", "Finds fireplace-aligned roof positions without forcing invalid placement.", roofs.chimney_assistant),
+        ("Lot planning grid", "Arrow through buildings, rooms, pools, landscaping and apparently open ground.", lot_grid.open_lot_grid),
+        ("Turn lot planning descriptions off", None, lot_grid.close_lot_grid),
+        ("Describe the lot and buildings", "Lot size, building positions, pools and cautiously inferred exterior areas.", roofs.describe_lot),
+        ("Describe detected buildings", "Neutral footprints and room, door and window counts for gallery and existing lots.", lot_grid.describe_buildings),
+        ("Describe this build", "Geometry, floors, room shapes, doors, connections and major furniture.", roofs.describe_build),
+        ("Name the building here", "Give the detected building at the grid cursor a custom name.", lot_grid.label_current_building),
+    ]
     if draw.is_on():
         rows += [
             ("Choose the drawing tool", "Wall, room or roof.", draw.choose_tool),
@@ -1412,8 +1396,6 @@ def open_menu():
                      "Move a cursor around the lot with Alt+arrows and draw walls, rooms and roofs from corner to corner.",
                      draw.start))
     rows += [
-        ("Put a roof on my house", "Choose a roof style. One roof goes over all the ground floor rooms.", draw.roof_whole_house),
-        ("Build my house", "Choose the rooms you want. The whole house is built with doors between the rooms.", house.build_my_house),
         ("Door between two rooms", "Choose two rooms, or a room and the yard. The door goes in the middle of the wall between them.",
          house.door_between_rooms),
         ("Remove a door or window", "Lists every door and window and where it is.", house.remove_door_or_window),
@@ -1425,18 +1407,13 @@ def open_menu():
         ("Name a room", "Give a room a name, like Kitchen or Shay's bedroom.", house.name_a_room),
         ("Catalog", "Doors, windows, wall and floor patterns, furniture and more, as lists with prices.", open_catalog),
         ("Place the chosen furnished room", "After choosing one in Catalog, Furnished rooms. You choose a free spot.", place_styled_room),
-        ("Put the chosen object in a room", "After choosing furniture in the Catalog. TS4 Access finds a free spot.", place_object_in_room),
-        ("Describe the lot", "Lot size, rooms and free space, in meters from the west and north edges.", describe_lot),
+        ("Guided placement", "After choosing furniture in the Catalog, choose a floor and a room or lot area.", place_object_in_room),
         ("Build a room", "Needs the Room Tool chosen in the catalog. You give the size and choose a place.", build_room),
         ("Draw a wall", "Picks the Wall Tool for you. You give a start point, a direction and a length.", build_wall),
         ("Put the chosen door or window on a wall", "Choose a door or window in the catalog first.", place_on_wall),
         ("Paint the walls of a room", "Choose a wall pattern in the catalog first.", lambda: paint_room("walls")),
         ("Paint the floor of a room", "Choose a floor pattern in the catalog first.", lambda: paint_room("floor")),
         ("Undo the last build step", "Takes back the last thing built, with a refund.", _undo_spoken),
+        ("Stair-shape diagnostics", "Logs the stair catalog for future shaped-stair support; places nothing.", planner.shaped_stair_diagnostics),
     ]
     core.choose("Build helper", "Chosen in the catalog now: {}.".format(tool), rows, lambda fn: fn(), tag="build")
-
-
-@core.on_zone_started
-def _start():
-    _hook_product()

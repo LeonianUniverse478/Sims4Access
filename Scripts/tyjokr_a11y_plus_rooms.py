@@ -94,7 +94,7 @@ class Room(object):
         return "about {} square meters".format(n)
 
 
-def scan_rooms():
+def _scan_rooms_base():
     """Return list of Room, indoor rooms only, on every floor of the active lot."""
     import services
     lot = services.active_lot()
@@ -329,3 +329,11 @@ def where_am_i():
     where = name or ("outside" if outside else "inside")
     core.speak("{} is in the {}, {}.".format(sim.sim_info.first_name, where, floor_name(int(sim.level)))
                if name else "{} is {}, {}.".format(sim.sim_info.first_name, where, floor_name(int(sim.level))))
+
+
+def scan_rooms():
+    """Rooms of the lot, always scanned on the simulation thread and with
+    fresh floor ranges (DaRainbowGirlXX, merged 2026-11-14)."""
+    import tyjokr_a11y_house_workflow as workflow
+    workflow.install()
+    return workflow._scan_rooms()

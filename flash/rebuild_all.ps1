@@ -46,7 +46,7 @@ $movies = [ordered]@{
     # the app domain unhooked.
     'GameEntryLibrary'          = $null
     'GameEntryLauncher'         = $null
-    'GameEntryDock'             = $null
+    'GameEntryDock'             = @("widgets.GameEntry.Dock.controls.PlexLotSelectOverlay", (Join-Path $extra "PlexLotSelectOverlay.as"))
     # CAS renders on its OWN stage, so the live TooltipManager's mouse
     # listener never sees it. Patching TooltipManager into CASLibrary was
     # tried 2026-08-03 and does NOTHING: ClassLibraryGamedata wins that class

@@ -86,6 +86,7 @@ class EventTests(unittest.TestCase):
         self.windows.clear()
         with patch.object(hub, 'events_window', return_value=True):
             hub.open_hub()
+            next(row[2] for row in self.windows[-1][1] if row[0] == lang.t('places'))()
         self.assertIn(lang.t('events'), [row[0] for row in self.windows[-1][1]])
 
     def test_events_are_listed_with_guests_and_time_left(self):

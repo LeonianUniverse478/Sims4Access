@@ -10,6 +10,9 @@ Everyone whose work is in TS4 Access. Accepted pull requests are added here.
   without Create a Sim, the Build helper).
 - **DaRainbowGirlXX**: Build cursor and scanner additions (scanner range,
   moving furniture, wall and room reading, target layers, room labels,
-  experimental surface placement and hanging wall objects).
+  experimental surface placement and hanging wall objects); house building,
+  roofs, basements, detached buildings, lot planning, chair snapping,
+  measured build coordinates, many screen-reader fixes for game screens,
+  household actions and the speech helper fix.
 
 Speech uses Prism by Ethin Probst (MPL-2.0).

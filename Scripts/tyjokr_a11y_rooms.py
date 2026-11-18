@@ -88,6 +88,18 @@ def label_for(room_id, level):
         return None
 
 
+def display_name(room_id, level):
+    label = label_for(room_id, level)
+    if label:
+        return label
+    try:
+        from tyjokr_a11y_room_bridge import inferred_name
+        return inferred_name(room_id, level)
+    except Exception as exc:
+        _log('inferred room name unavailable: {!r}'.format(exc))
+        return None
+
+
 def _room_at(i, j, level):
     import tyjokr_a11y_tiles as tiles
     frame = tiles.frame()
@@ -100,7 +112,7 @@ def room_name(room_id, outside, level):
     """'outside', the room's label, or None for an unlabelled room."""
     if outside:
         return "outside"
-    return label_for(room_id, level)
+    return display_name(room_id, level)
 
 
 def current_room():

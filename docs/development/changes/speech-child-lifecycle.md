@@ -1,0 +1,5 @@
+# Speech helper lifecycle
+
+Windows fallback speech now owns its PowerShell child through an unnamed, non-inheritable kill-on-close Windows Job Object. Parent exit/crash releases the job even if PowerShell never reaches its stdin loop. Startup is serialized; repeated initialization reuses the existing live child. Restart closes the job, waits for termination and closes stdin. Ownership/launch failure tears down the candidate instead of retaining an unowned helper. Speech writes take a synchronized process snapshot, then release the lock before pipe I/O so a blocked pipe cannot prevent restart or exit cleanup.
+
+Code: Scripts/tyjokr_a11y_speech_process.py (SpeechJob); Scripts/tyjokr_a11y_speech.py (_try_init_sapi, _dispose_sapi_locked, restart_sapi, stop, _speak_now). Tests: tools/test_speech_process_lifecycle.py. Ten cases passed, including actual Windows normal-parent-exit and forced-parent-termination tests with harmless sleeping children. Existing 43 speech-mode checks passed. Live in-game fallback voice remains to be tested.

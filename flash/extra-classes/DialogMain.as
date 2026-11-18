@@ -567,20 +567,21 @@ package widgets.Dialog
       
       protected function HandleShowSavingDialog(param1:Object) : void
       {
-         var _loc2_:LocalRequestData = null;
-         var _loc3_:IDialog = null;
-         if(CommunicationManager.CallUIService("IsUILoading"))
+         var _loc3_:LocalRequestData = null;
+         var _loc4_:IDialog = null;
+         var _loc2_:Boolean = Boolean(param1) && param1.hasOwnProperty("allowDuringLoading") && Boolean(param1.allowDuringLoading);
+         if(!_loc2_ && Boolean(CommunicationManager.CallUIService("IsUILoading")))
          {
             return;
          }
-         _loc2_ = new LocalRequestData();
-         _loc3_ = new SavingDialog();
-         _loc2_.title = param1["title"];
-         _loc2_.dialog_id = param1["dialog_id"];
-         _loc2_.options = param1["options"];
-         var _loc4_:DialogRequest = new DialogRequest(_loc3_,_loc2_);
-         _loc4_.modality = DialogModality.SYSTEM;
-         DialogManager.RequestDialog(_loc4_);
+         _loc3_ = new LocalRequestData();
+         _loc4_ = new SavingDialog();
+         _loc3_.title = param1["title"];
+         _loc3_.dialog_id = param1["dialog_id"];
+         _loc3_.options = param1["options"];
+         var _loc5_:DialogRequest = new DialogRequest(_loc4_,_loc3_);
+         _loc5_.modality = DialogModality.SYSTEM;
+         DialogManager.RequestDialog(_loc5_);
       }
       
       protected function HandleShowExchangeLegalNoticeDialog(param1:Object) : void

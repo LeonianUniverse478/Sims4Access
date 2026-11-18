@@ -131,7 +131,7 @@ function manager(root) {
     mA11yList: null, mA11yListRoot: null, mA11yEdge: 0, mA11yFocused: null, mA11yLogicalList: null, mA11yLogicalIndex: -1,
     mA11yActivating: false, mA11yFocusPending: null, mA11yFocusDue: 0,
     dispatched: [], announced: [], focused: [], requests: [],
-    A11ySimplifiedActive: () => true, A11yModalFrame() {}, A11ySeasonActivate: () => false, A11yActivateCASName: () => false,
+    A11ySimplifiedActive: () => true, A11yModalFrame() {}, A11ySeasonActivate:()=>false,A11yPlexActivate:()=>false, A11yActivateCASName: () => false,
     A11yCalendarAddOwner: () => null, A11ySingleFilterLabel: () => null, A11yInListViewport: () => true,
     A11yIntersectsStage: () => true, A11yCanRevealOnStage: () => false, A11yHiddenHireControl: () => false,
     A11yPickerFooter: () => false, A11yConfirmSinglePicker: () => false, A11yCalendarSchedule() {}, A11yClearFocus() {},

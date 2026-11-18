@@ -169,7 +169,8 @@ package widgets.Gameplay.SimInfoHUD.MotivePanel
             {
                return "";
             }
-            _loc2_ = this.mCommodityData.commodity_name.toString();
+            // Match EA's visible title, including trait-dependent occult names.
+            _loc2_ = this.mCommodityData.GetCommodityName(GameplayStateData.AllTraitIds).toString();
             if(_loc2_ == null || _loc2_.length == 0)
             {
                return "";
@@ -185,6 +186,8 @@ package widgets.Gameplay.SimInfoHUD.MotivePanel
             {
                _loc4_ = Math.round(_loc4_);
             }
+            if(!isFinite(_loc4_)) { return _loc2_; }
+            _loc4_ = Math.max(0,Math.min(100,_loc4_));
             _loc2_ = _loc2_ + ". " + _loc4_.toString() + "%";
             return _loc2_;
          }

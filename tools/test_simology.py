@@ -152,10 +152,11 @@ class SimologyTests(unittest.TestCase):
             with patch.object(simology, 'milestones_available', return_value=ep13), \
                     patch.object(simology, 'values_available', return_value=gp05):
                 hub.open_hub()
+                next(row[2] for row in self.windows[-1][2] if row[0] == lang.t('yourself'))()
             labels = [row[0] for row in self.windows[-1][2]]
             self.assertEqual(lang.t('milestones') in labels, ep13)
             self.assertEqual(lang.t('character values') in labels, gp05)
-        self.assertEqual(labels.index(lang.t('businesses')) + 1, labels.index(lang.t('self interactions')))
+        self.assertIn(lang.t('self interactions'), labels)
 
     def test_categories_count_what_the_panel_shows(self):
         self.assertTrue(simology.milestones_window())

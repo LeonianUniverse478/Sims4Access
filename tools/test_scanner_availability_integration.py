@@ -32,19 +32,19 @@ class AvailabilityIntegrationTests(unittest.TestCase):
         for verdict in ('usable', 'locked', 'pending', 'empty'):
             self.verdicts[3] = verdict
             scanner._scan()
-            ids = [e.obj_id for e in scanner._by_group.get('SURFACE', [])]
+            ids = [e.obj_id for e in scanner._by_group.get(scanner.OBJECTS, [])]
             self.assertEqual(3 in ids, verdict != 'empty', verdict)
-            self.assertEqual([e.obj_id for e in scanner._by_group['SIMS']], [1, 2])
+            self.assertEqual([e.obj_id for e in scanner._by_group[scanner.SIMS]], [2])
 
     def test_forwarded_target_is_not_rejected_by_static_census(self):
         with patch.object(scanner, '_has_interactions', return_value=False):
             scanner._scan()
-        self.assertEqual([e.obj_id for e in scanner._by_group['SURFACE']], [3, 4])
+        self.assertEqual([e.obj_id for e in scanner._by_group[scanner.OBJECTS]], [3, 4])
 
     def test_locked_item_has_spoken_status_but_keeps_native_open(self):
         self.verdicts[3] = 'locked'
         scanner._scan()
-        scanner._group_index = scanner._groups.index('SURFACE')
+        scanner._group_index = scanner._groups.index(scanner.OBJECTS)
         scanner._item_index = 0
         scanner._tree_level = 'items'
         parts = scanner._entry_parts(scanner._current(), 0, 2)
@@ -55,7 +55,7 @@ class AvailabilityIntegrationTests(unittest.TestCase):
 
     def test_filtering_sibling_preserves_selected_object(self):
         scanner._scan()
-        scanner._group_index = scanner._groups.index('SURFACE')
+        scanner._group_index = scanner._groups.index(scanner.OBJECTS)
         scanner._item_index = 1
         scanner._tree_level = 'items'
         self.verdicts[3] = 'empty'

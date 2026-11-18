@@ -303,6 +303,97 @@ package olympus.core
          catch(e:Error) { this.A11yBuildUnbind(); this.A11yBuildReply(serial,"aimfailed"); }
       }
 
+      // Independent read-only projection. Never enables/moves a cursor or
+      // confirms a tool; the Python coordinate adapter owns the response.
+      protected var mA11yCoordinateMarker:Sprite = null;
+      protected var mA11yCoordinateSerial:int = 0;
+      protected var mA11yCoordinateZone:String = "";
+      protected var mA11yCoordinateUntil:int = 0;
+      protected var mA11yCoordinateFrames:int = 0;
+
+      public function A11yCoordinateCancel() : void
+      {
+         var marker:Sprite = this.mA11yCoordinateMarker;
+         this.mA11yCoordinateMarker = null;
+         try
+         {
+            if(marker != null)
+            {
+               marker.removeEventListener(Event.ENTER_FRAME,this.A11yCoordinateFrame);
+               CommunicationManager.CallGameService("UnbindDisplayObject",{"displayObject":marker});
+            }
+         }
+         catch(e:Error) { }
+         try { if(marker != null && marker.parent != null) { marker.parent.removeChild(marker); } }
+         catch(removeError:Error) { }
+      }
+
+      public function A11yCoordinateReply(result:String, point:Point = null) : void
+      {
+         var serial:int = this.mA11yCoordinateSerial;
+         var zone:String = this.mA11yCoordinateZone;
+         try
+         {
+            var stage:Stage = this.mTooltipsLayer.stage;
+            var layout:Object = getDefinitionByName("olympus.gamepad.LayoutAPI");
+            var bounds:Rectangle = this.A11yBuildBounds();
+            this.A11yPostToPython("a11y.coords_enc",encodeURIComponent([
+               serial,zone,result,point != null ? point.x : "NaN",point != null ? point.y : "NaN",
+               stage.stageWidth,stage.stageHeight,stage.scaleMode,stage.align,
+               Number(layout["StageWidth"]),Number(layout["StageHeight"]),
+               bounds != null ? bounds.left : 0,bounds != null ? bounds.top : 0,
+               bounds != null ? bounds.right : 0,bounds != null ? bounds.bottom : 0].join("|")));
+         }
+         catch(e:Error) { }
+         this.A11yCoordinateCancel();
+      }
+
+      public function A11yCoordinateProbe(parts:Array) : void
+      {
+         if(parts.length != 8) { return; }
+         if(this.mA11yCoordinateMarker != null) { this.A11yCoordinateReply("cancelled"); }
+         this.mA11yCoordinateSerial = int(parts[2]);
+         this.mA11yCoordinateZone = String(parts[7]);
+         try
+         {
+            var x:Number = Number(parts[3]);
+            var y:Number = Number(parts[4]);
+            var z:Number = Number(parts[5]);
+            var level:Number = Number(parts[6]);
+            if(this.mA11yCoordinateSerial <= 0 || !isFinite(x) || !isFinite(y) || !isFinite(z) || !isFinite(level) || int(level) != level || Math.abs(x) > 100000 || Math.abs(y) > 100000 || Math.abs(z) > 100000) { return; }
+            if(!this.mA11yBuildControls || !this.mA11yKeyboard || this.A11yWorldHudMode() != 2 || this.A11yBuildBlocked() || getTimer() > this.mA11yKeyboardLease) { this.A11yCoordinateReply("blocked"); return; }
+            if(String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true)) != this.mA11yCoordinateZone) { this.A11yCoordinateReply("zonechanged"); return; }
+            var marker:Sprite = new Sprite();
+            marker.name = "A11yCoordinateProbe";
+            marker.mouseEnabled = false;
+            marker.mouseChildren = false;
+            marker.alpha = 0;
+            marker.x = -1000000;
+            marker.y = -1000000;
+            this.mA11yCoordinateMarker = marker;
+            this.mA11yCoordinateUntil = getTimer() + 1500;
+            this.mA11yCoordinateFrames = 0;
+            this.mTooltipsLayer.addChild(marker);
+            marker.addEventListener(Event.ENTER_FRAME,this.A11yCoordinateFrame,false,0,true);
+            CommunicationManager.CallGameService("BindDisplayObject",{"displayObject":marker,"worldOffset":{"x":x,"y":y,"z":z},"screenOffset":{"x":0,"y":0}});
+         }
+         catch(e:Error) { this.A11yCoordinateReply("error"); }
+      }
+
+      public function A11yCoordinateFrame(event:Event) : void
+      {
+         try
+         {
+            if(this.mA11yCoordinateMarker == null) { return; }
+            this.mA11yCoordinateFrames = this.mA11yCoordinateFrames + 1;
+            if(this.A11yWorldHudMode() != 2 || this.A11yBuildBlocked() || !this.mA11yKeyboard || getTimer() > this.mA11yKeyboardLease || String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true)) != this.mA11yCoordinateZone) { this.A11yCoordinateReply("blocked"); return; }
+            var point:Point = this.mA11yCoordinateMarker.localToGlobal(new Point(0,0));
+            if(this.mA11yCoordinateMarker.visible && isFinite(point.x) && isFinite(point.y) && Math.abs(point.x) < 999999 && Math.abs(point.y) < 999999) { this.A11yCoordinateReply("point",point); return; }
+            if(getTimer() > this.mA11yCoordinateUntil || this.mA11yCoordinateFrames >= 90) { this.A11yCoordinateReply("viewport"); }
+         }
+         catch(e:Error) { this.A11yCoordinateReply("error"); }
+      }
+
       public function A11yBuildProjectionFrame() : void
       {
          var point:Point = null;
@@ -3200,6 +3291,11 @@ package olympus.core
          try
          {
             name = getQualifiedClassName(item);
+            if(name == "widgets.Gameplay.SituationDisplay.controls::SituationGoalCellView" || name == "widgets.Gameplay.SituationDisplay.controls::SituationGoalIconContainer" || name == "widgets.Gameplay.SituationDisplay.controls::SituationMajorGoalIconContainer") { return true; }
+            // Occult XP/points are not buttons. Retain one informational
+            // stop while the existing walker also exposes the native powers
+            // button. Match only EA's two known rows, not unrelated panels.
+            if(name == "widgets.Gameplay.SimInfoHUD.MotivePanel::MotivePanelRankedStatContent" || name == "widgets.Gameplay.SimInfoHUD.SummaryPanel::SummaryPanelRankedStatContent") { return true; }
             if("btnAdd" in item && "txtLabel" in item) { return true; }
             if(name.indexOf("JobInfoCellView") >= 0 || name.indexOf("PerformanceMoodDetails") >= 0) { return true; }
             if(name.indexOf("ProfileDataCell") >= 0) { return true; }
@@ -3477,6 +3573,9 @@ package olympus.core
       {
          var owner:Object = item;
          var button:DisplayObject = null;
+         var reason:String = "";
+         var extension:Object = null;
+         var keys:Object = null;
          try
          {
             while(owner != null && owner != this.mTooltipsLayer.stage)
@@ -3485,6 +3584,26 @@ package olympus.core
                else if(!advance && "btnDone" in owner) { button = owner["btnDone"] as DisplayObject; }
                if(button != null && this.A11yIsLive(button))
                {
+                  // Purchase rows do not add quantity on Enter. Do not move
+                  // to a disabled Done button and strand an empty cart there.
+                  if(!advance && "enabled" in button && Object(button)["enabled"] == false)
+                  {
+                     try
+                     {
+                        extension = Object(button)["TooltipExt"];
+                        if(extension != null && extension["Text"] != null) { reason = String(extension["Text"]); }
+                        if(reason.length == 0)
+                        {
+                           keys = getDefinitionByName("olympus.localization.KeysConsole");
+                           reason = keys["PURCHASE_PICKER_EMPTY_CART"].toString();
+                        }
+                     }
+                     catch(reasonError:Error) { }
+                     if(reason.length == 0) { reason = "Choose an item quantity before confirming."; }
+                     this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|" + reason + " Use Right and Left on an item to change quantity, then Enter for Done."));
+                     this.A11yPostToPython("a11y.mark","purchase-footer-disabled");
+                     return true;
+                  }
                   this.A11yFocusItem(button);
                   if(advance && Object(button)["enabled"]) { this.A11yActivate(false); }
                   return true;
@@ -3630,6 +3749,130 @@ package olympus.core
             this.mA11yActivating = false;
          }
          catch(e:Error) { this.mA11yActivating = false; }
+      }
+
+      protected var mA11yGoalContent:DisplayObject = null;
+      protected var mA11yGoalScope:DisplayObject = null;
+      protected var mA11yGoalId:String = "";
+      protected var mA11yGoalZone:String = "";
+      protected var mA11yGoalUntil:int = 0;
+      protected var mA11yGoalCheck:int = 0;
+      protected var mA11yGoalVisits:int = 0;
+
+      public function A11yEventGoalFind(item:DisplayObject, id:String, depth:int = 0) : DisplayObject
+      {
+         if(item == null || depth > 16 || this.mA11yGoalVisits >= 2048) { return null; }
+         this.mA11yGoalVisits = this.mA11yGoalVisits + 1;
+         try
+         {
+            if(getQualifiedClassName(item).indexOf("widgets.Gameplay.SituationDisplay.controls::") == 0 && "Id" in item && String(Object(item)["Id"]) == id) { return item; }
+            var parent:DisplayObjectContainer = item as DisplayObjectContainer;
+            var index:int = 0;
+            if(parent != null)
+            {
+               while(index < parent.numChildren)
+               {
+                  var found:DisplayObject = this.A11yEventGoalFind(parent.getChildAt(index),id,depth + 1);
+                  if(found != null) { return found; }
+                  index = index + 1;
+               }
+            }
+         }
+         catch(e:Error) { }
+         return null;
+      }
+
+      public function A11yEventGoalClear() : void
+      {
+         try { this.mTooltipsLayer.removeEventListener(Event.ENTER_FRAME,this.A11yEventGoalFrame); }
+         catch(e:Error) { }
+         if(this.mA11yGoalScope != null)
+         {
+            if(this.mA11yPendingScope == this.mA11yGoalScope) { this.mA11yPendingScope = null; }
+            if(this.mA11yStatusScope == this.mA11yGoalScope) { this.mA11yStatusScope = null; }
+            if(this.mA11yScope == this.mA11yGoalScope) { this.A11yClearFocus(); this.mA11yScope = null; }
+         }
+         this.mA11yGoalContent = null; this.mA11yGoalScope = null;
+         this.mA11yGoalId = ""; this.mA11yGoalZone = "";
+      }
+
+      public function A11yEventGoalFrame(event:Event) : void
+      {
+         var now:int = getTimer();
+         if(now < this.mA11yGoalCheck) { return; }
+         this.mA11yGoalCheck = now + 200;
+         try
+         {
+            if(this.mA11yGoalContent == null || this.mA11yStatusScope != this.mA11yGoalScope || !this.mA11yKeyboard || now > this.mA11yKeyboardLease || now > this.mA11yGoalUntil || !this.A11yIsLive(this.mA11yGoalContent) || (this.mA11yGoalId.length > 0 && String(Object(this.mA11yGoalContent)["Id"]) != this.mA11yGoalId) || String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true)) != this.mA11yGoalZone)
+            { this.A11yEventGoalClear(); }
+         }
+         catch(e:Error) { this.A11yEventGoalClear(); }
+      }
+
+      public function A11yEventGoals(parts:Array) : void
+      {
+         if(parts.length != 5) { return; }
+         var serial:String = String(parts[4]);
+         var zone:String = String(parts[3]);
+         var status:String = "unavailable";
+         try
+         {
+            this.A11yModalFrame();
+            if(!this.mA11yKeyboard || getTimer() > this.mA11yKeyboardLease || this.A11yWorldHudMode() != 1 || this.mA11yActiveModalRoot != null) { status = "blocked"; }
+            else if(String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true)) == zone)
+            {
+               var root:DisplayObject = this.A11yLoadedWidget("SituationDisplay") as DisplayObject;
+               this.mA11yGoalVisits = 0;
+               var content:DisplayObject = this.A11yEventGoalFind(root,String(parts[2]));
+               if(this.A11yIsLive(root) && content != null && "mSituationGoalDisplay" in content)
+               {
+                  var ancestor:DisplayObject = content.parent;
+                  var depth:int = 0;
+                  while(ancestor != null && depth < 16)
+                  {
+                     if("OpenContentPanelWithId" in ancestor) { Object(ancestor)["OpenContentPanelWithId"](String(parts[2])); break; }
+                     ancestor = ancestor.parent; depth = depth + 1;
+                  }
+                  var goals:DisplayObject = Object(content)["mSituationGoalDisplay"] as DisplayObject;
+                  if(this.A11yIsLive(content) && goals != null && goals.visible)
+                  {
+                     this.A11yEventGoalClear();
+                     this.mA11yGoalContent = content; this.mA11yGoalScope = goals;
+                     this.mA11yGoalId = String(parts[2]); this.mA11yGoalZone = zone;
+                     this.mA11yGoalUntil = getTimer() + 300000; this.mA11yGoalCheck = 0;
+                     this.mA11yStatusScope = goals;
+                     this.A11yFocusInto(goals);
+                     this.mTooltipsLayer.addEventListener(Event.ENTER_FRAME,this.A11yEventGoalFrame,false,0,true);
+                     status = "opened";
+                  }
+               }
+            }
+         }
+         catch(e:Error) { status = "error"; }
+         // Running-event feature: this command is deliberately loaded-zone only.
+         this.A11yPostToPython("a11y.eventgoals_enc",encodeURIComponent(serial + "|" + zone + "|" + status));
+      }
+
+      public function A11yPhotography(param1:Object = null) : void
+      {
+         try
+         {
+            this.A11yModalFrame();
+            var camera:DisplayObject = this.A11yLoadedWidget("SimCamera") as DisplayObject;
+            if(!this.mA11yKeyboard || getTimer() > this.mA11yKeyboardLease || !this.A11yIsLive(camera) || (this.mA11yActiveModalRoot != null && this.mA11yActiveModalRoot != camera && !this.A11yIsInside(camera,this.mA11yActiveModalRoot) && !this.A11yIsInside(this.mA11yActiveModalRoot,camera)))
+            {
+               this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|action unavailable")); return;
+            }
+            this.A11yEventGoalClear();
+            this.mA11yGoalContent = camera; this.mA11yGoalScope = camera;
+            this.mA11yGoalId = "";
+            this.mA11yGoalZone = String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true));
+            this.mA11yGoalUntil = getTimer() + 300000; this.mA11yGoalCheck = 0;
+            this.mA11yStatusScope = camera;
+            this.A11yFocusInto(camera);
+            this.mTooltipsLayer.addEventListener(Event.ENTER_FRAME,this.A11yEventGoalFrame,false,0,true);
+         }
+         catch(e:Error) { this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|action unavailable")); }
       }
 
       public function A11yWants(param1:Object = null) : void
@@ -3968,6 +4211,7 @@ package olympus.core
       public function A11yHandleEncoded(param1:String) : void
       {
          var _loc2_:Array = param1.split("|");
+         if(_loc2_[1] == "eventgoals" && _loc2_.length == 5) { this.A11yEventGoals(_loc2_); return; }
          if(_loc2_[1] == "lotprice" && _loc2_.length == 4)
          {
             this.A11yLotRentalPrice(String(_loc2_[2]),String(_loc2_[3]));
@@ -4014,6 +4258,7 @@ package olympus.core
          }
          if(_loc2_[1] == "buildhand" && _loc2_.length == 4 && _loc2_[2] == "drop") { this.A11yBuildHandDrop(String(_loc2_[3])); return; }
          if(_loc2_[1] == "buildaim" && _loc2_.length == 8) { this.A11yBuildAim(_loc2_); return; }
+         if(_loc2_[1] == "coords" && _loc2_.length == 8) { this.A11yCoordinateProbe(_loc2_); return; }
          if(_loc2_[1] == "build" && _loc2_.length == 4) { this.A11yBuildCommand(String(_loc2_[2]),int(_loc2_[3])); return; }
          if(_loc2_[1] == "plus" && _loc2_.length >= 3) { this.A11yPlusHandle(_loc2_); return; }
          if(_loc2_[1] == "keyup") { delete this.mA11yGuardHeld[int(_loc2_[2])]; return; }
@@ -4320,6 +4565,7 @@ package olympus.core
             CommunicationManager.AddMessageListenerByName("A11yInvItemActions",this.A11yInvItemActions,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yBuildGridOn",this.A11yBuildGridOnMsg,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yBuildGridOff",this.A11yBuildGridOffMsg,"A11yNarrator");
+            CommunicationManager.AddMessageListenerByName("A11yPhotography",this.A11yPhotography,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yWants",this.A11yWants,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yNeeds",this.A11yNeeds,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yToggle",this.A11yMsgToggle,"A11yNarrator");
@@ -4987,6 +5233,11 @@ package olympus.core
             }
             return;
          }
+         if(_loc7_ == "widgets.GameEntry.Dock.controls::PlexClip")
+         {
+            if(this.A11yPlexInfo(param1) != null && this.A11yIntersectsStage(param1)) { param2.push(param1); }
+            return;
+         }
          if(this.A11yKeyboardDecoration(param1)) { return; }
          if(this.A11ySemanticTarget(param1) != param1) { return; }
          if("A11yMotiveText" in param1 || "btnSolve" in param1)
@@ -5008,6 +5259,38 @@ package olympus.core
                return;
             }
          }
+         if(_loc7_ == "widgets.Gameplay.SituationDisplay.controls::SituationGoalCellView" || _loc7_ == "widgets.Gameplay.SituationDisplay.controls::SituationGoalIconContainer" || _loc7_ == "widgets.Gameplay.SituationDisplay.controls::SituationMajorGoalIconContainer")
+         {
+            _loc6_ = param1.getBounds(param1.stage);
+            if(_loc6_.width > 2 && _loc6_.height > 2 && (this.A11yIntersectsStage(param1) || this.A11yCanRevealOnStage(param1)) && this.A11yInListViewport(param1)) { param2.push(param1); }
+            return;
+         }
+
+         // Compound cards retain their readable row and expose only native
+         // child actions. No action is synthesized for Social Bunny text rows.
+         var childActions:Array = null;
+         if(_loc7_ == "widgets.shared.controls.Scenarios::ScenarioCardCellView") { childActions = ["btnPlay"]; }
+         else if(_loc7_ == "widgets.Gameplay.SocialMedia::SocialMediaFriendCellView") { childActions = ["btnSendMessage","btnRemoveFriend"]; }
+         else if(_loc7_ == "widgets.Gameplay.SocialMedia::SocialMediaFeedCellView") { childActions = ["btnReaction","btnAddFriend","mcReactionsGrid"]; }
+         else if(_loc7_ == "widgets.Gameplay.SocialMedia::SocialMediaMessageDMCellView") { childActions = ["btnReaction","mcReactionsGrid"]; }
+         else if(_loc7_ == "widgets.Gameplay.Clubs.ClubManagement.controls::ClubCellView") { childActions = ["btnDetails","btnAction"]; }
+         else if(_loc7_ == "widgets.Exchange.Subscriptions.controls::SubscriptionCellView") { childActions = ["btnFollow","btnBlock","btnUnblock"]; }
+         else if(_loc7_ == "widgets.Gameplay.SimInfoHUD.HouseholdInfoVenuePanel.RentalUnit::RentalUnitCellView") { childActions = ["btnTravel","btnViewAgreement","btnFillVacancy"]; }
+         else if(_loc7_ == "widgets.GameEntry.HouseholdPanel.controls::HouseholdPanelCellView") { childActions = ["btnUserHH","btnDelete","btnStoryProgression"]; }
+         if(childActions != null)
+         {
+            _loc6_ = param1.getBounds(param1.stage);
+            if(_loc6_.width > 2 && _loc6_.height > 2 && (this.A11yIntersectsStage(param1) || this.A11yCanRevealOnStage(param1)) && this.A11yInListViewport(param1)) { param2.push(param1); }
+            var childIndex:int = 0;
+            while(childIndex < childActions.length)
+            {
+               var childName:String = String(childActions[childIndex]);
+               if(childName in param1) { this.A11yCollectFocusables(Object(param1)[childName] as DisplayObject,param2,param3 + 1); }
+               childIndex = childIndex + 1;
+            }
+            return;
+         }
+
          // Business employee cells (BusinessEmployeeManagement, used by
          // retail stores and the WickedWhims strip club): a Sim to hire is
          // the cell itself; a current employee's cell is disabled but holds
@@ -6103,8 +6386,71 @@ package olympus.core
       // focused dropdown button says only its value (2026-09-26 live: the
       // Autonomy and Auto Age rows read as bare Off and Yes). Checkbox rows
       // are whole-cell stops that already read their label.
+      // Native option cells own labels, but only their visible child owns
+      // activation. Keep disabled controls as targets so EA's enabled guard
+      // remains authoritative. No direct setting writes or synthetic toggles.
+      public function A11yOptionsControl(item:DisplayObject) : DisplayObject
+      {
+         var name:String = item != null ? getQualifiedClassName(item) : "";
+         var control:DisplayObject = null;
+         var fields:Array = ["cbCheckbox","ddDropdown","tbTextButton"];
+         var index:int = 0;
+         if(name.indexOf("widgets.OptionsMenu.controls::") != 0 || name.indexOf("OptionsCellView") < 0) { return null; }
+         while(index < fields.length)
+         {
+            if(fields[index] in item)
+            {
+               control = Object(item)[fields[index]] as DisplayObject;
+               if(this.A11yIsLive(control)) { return control; }
+            }
+            index = index + 1;
+         }
+         return null;
+      }
+
+      public function A11yGraphicsRowLabel(item:DisplayObject, result:Array) : void
+      {
+         var node:DisplayObject = item;
+         var depth:int = 0;
+         var name:String = "";
+         var suffix:String = "";
+         var control:DisplayObject = null;
+         var label:DisplayObject = null;
+         var text:String = "";
+         var fields:Array = ["DisplayType","Resolution","RefreshRate","SceneRes","SimQuality","ObjQuality","LightingQuality","ReflectionQuality","EdgeSmooth","VisualEffect","ViewDistance","VisualQuality"];
+         try
+         {
+            while(node != null && depth < 8)
+            {
+               name = getQualifiedClassName(node);
+               if(name == "widgets.OptionsMenu.controls.tabs::DefaultGraphicsTab" || name == "widgets.OptionsMenu.controls.tabs::MacGraphicsTab" || name == "widgets.OptionsMenu.controls.tabs::GraphicsTab")
+               {
+                  for each(suffix in fields)
+                  {
+                     if(("dd" + suffix) in node && ("lb" + suffix) in node)
+                     {
+                        control = Object(node)["dd" + suffix] as DisplayObject;
+                        label = Object(node)["lb" + suffix] as DisplayObject;
+                        if(this.A11yIsLive(control) && this.A11yIsLive(label) && this.A11yIsInside(item,control))
+                        {
+                           text = this.A11yJoinedText(label);
+                           if(text != null && text.length > 0) { result.unshift("-999998|0|" + text); }
+                           return;
+                        }
+                     }
+                  }
+                  return;
+               }
+               node = node.parent;
+               depth = depth + 1;
+            }
+         }
+         catch(e:Error) { }
+      }
+
       public function A11yOptionsRowLabel(item:DisplayObject, result:Array) : void
       {
+         this.A11yGraphicsRowLabel(item,result);
          var node:DisplayObject = item;
          var depth:int = 0;
          var label:Object = null;
@@ -6116,6 +6462,18 @@ package olympus.core
             {
                if("lbLabel" in node && "ddDropdown" in node)
                {
+                  if(node == item && getQualifiedClassName(node).indexOf("widgets.OptionsMenu.controls::") == 0 && getQualifiedClassName(node).indexOf("OptionsCellView") >= 0)
+                  {
+                     // Focused rows used to read hidden checkbox/button artwork
+                     // ("Ok", "Label Name") alongside the actual setting.
+                     result.length = 0;
+                     var control:DisplayObject = this.A11yOptionsControl(node);
+                     this.A11yCollectText(Object(node)["lbLabel"] as DisplayObject,result,1,true);
+                     if(control != null && getQualifiedClassName(control).indexOf("Checkbox") < 0) { this.A11yCollectText(control,result,1,true); }
+                     if("txtDescription" in node) { this.A11yCollectText(Object(node)["txtDescription"] as DisplayObject,result,1,true); }
+                     if("txtInformation" in node) { this.A11yCollectText(Object(node)["txtInformation"] as DisplayObject,result,1,true); }
+                     return;
+                  }
                   if(!this.A11yIsInside(item,Object(node)["ddDropdown"] as DisplayObject)) { return; }
                   label = Object(node)["lbLabel"];
                   if(label == null || !label["visible"] || !("textField" in label)) { return; }
@@ -6353,6 +6711,9 @@ package olympus.core
          try
          {
             if(item == null || item.parent == null) { return false; }
+            // Native CellView controller artwork is not an independent action.
+            // Follow the parent's explicit link, not a spoken-label heuristic.
+            if(item.name == "mcControllerHighlight" && "mcControllerHighlight" in item.parent && Object(item.parent)["mcControllerHighlight"] == item) { return true; }
             // WorldCellView.Draw only fills pack captions for a locked world.
             // Its dormant authoring clips otherwise still contain Pack Name.
             if((item.name == "mcPackInfo" || item.name == "btnUnlock") && getQualifiedClassName(item.parent) == "widgets.GameEntry.WorldSelection.controls::WorldCellView" && "btnUnlock" in item.parent && Object(item.parent)["btnUnlock"] != null && !Object(item.parent)["btnUnlock"].visible) { return true; }
@@ -6435,6 +6796,9 @@ package olympus.core
       {
          if(this.A11yTextDecoration(item)) { return true; }
          var name:String = getQualifiedClassName(item);
+         // EA retains unoccupied temperament/curse cells in the display tree.
+         // Their public IsEmpty getter is authoritative; they have no action.
+         if((name == "SimInfoMotivePanel::MotivePanelTemperamentCellView" || name == "SimInfoMotivePanel::MotivePanelCurseCellView") && "IsEmpty" in item && Object(item)["IsEmpty"]) { return true; }
          // Escape already closes the active screen. Keep the redundant
          // corner close button out of simplified option traversal.
          if(this.mA11ySimplifiedMenus && item.name == "btnClose" && this.A11ySimplifiedActive()) { return true; }
@@ -6457,6 +6821,7 @@ package olympus.core
       public function A11yCompositeRow(item:DisplayObject) : Boolean
       {
          if(item == null) { return false; }
+         if(getQualifiedClassName(item) == "widgets.shared.controls.Scenarios::ScenarioDisplayGroupCellView" || getQualifiedClassName(item) == "widgets.Gameplay.SimInfoHUD.HouseholdInfoVenuePanel.RentalUnit::RentalUnitRegionCellView" || getQualifiedClassName(item) == "widgets.Gameplay.SimInfoHUD.HouseholdInfoVenuePanel.RentalUnit::RentalUnitLotCellView") { return true; }
          // Options categories are children of a ButtonBar, not one giant
          // button containing every category name.
          if(this.mA11ySimplifiedMenus && this.A11ySimplifiedActive() && getQualifiedClassName(item) == "scaleform.clik.controls::ButtonBar") { return true; }
@@ -6464,6 +6829,16 @@ package olympus.core
          // grid. Only the child button emits EA's mainRowClick event; focus
          // both it and visible serving buttons instead of the inert wrapper.
          if(getQualifiedClassName(item) == "widgets.Pickers.controls.GridPicker::RowCellView") { return true; }
+         if(getQualifiedClassName(item) == "widgets.Gameplay.SocialMedia::SocialMediaMessageCellView") { return true; }
+         // Native dialog rows wrap the actual editable TextField.
+         if(getQualifiedClassName(item) == "widgets.Dialog.controls::TextInputCellView" || getQualifiedClassName(item) == "widgets.Dialog.controls::InlineTextInputCellView") { return true; }
+         // These rank rows wrap the real, game-validated ability buttons.
+         // Treating the CellView wrapper as a choice hides every power in
+         // the nested grids (including werewolf and fairy abilities).
+         if(getQualifiedClassName(item) == "widgets.Gameplay.PerksPanel.controls::PerkRowCellView" || getQualifiedClassName(item) == "widgets.Gameplay.PerksPanel.controls::FairyPerkRowCellView") { return true; }
+         // Transfer's neighborhood row owns an expand button and a nested
+         // household grid. The wrapper has no native selection action.
+         if(getQualifiedClassName(item) == "widgets.TransferPanel.controls::TransferNhdItemCellView") { return true; }
          // EA's category cell wraps the world grid; StreetClip wraps mcLots.
          // Neither is the destination button. Stopping here hides its choices.
          if(getQualifiedClassName(item) == "widgets.GameEntry.WorldSelection.controls::WorldRegionTypeCellView" || getQualifiedClassName(item) == "widgets.GameEntry.Neighborhood.controls::StreetClip") { return true; }
@@ -6611,6 +6986,74 @@ package olympus.core
          return "";
       }
 
+      public function A11yPlexInfo(item:DisplayObject) : Object
+      {
+         try
+         {
+            if(item == null || getQualifiedClassName(item) != "widgets.GameEntry.Dock.controls::PlexClip" || item.parent == null || !("A11yPlexInfo" in item.parent)) { return null; }
+            return Object(item.parent)["A11yPlexInfo"](item);
+         }
+         catch(e:Error) { }
+         return null;
+      }
+
+      public function A11yPlexActivate(item:DisplayObject) : Boolean
+      {
+         if(item == null || getQualifiedClassName(item) != "widgets.GameEntry.Dock.controls::PlexClip") { return false; }
+         try
+         {
+            var info:Object = this.A11yPlexInfo(item);
+            if(!this.A11yIsLive(item) || info == null || info.enabled != true || (this.mA11yActiveModalRoot != null && !this.A11yIsInside(item,this.mA11yActiveModalRoot)))
+            { this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|action unavailable")); return true; }
+            this.mA11yActivating = true;
+            var selected:Boolean = Object(item.parent)["A11yPlexSelect"](item);
+            this.mA11yActivating = false;
+            this.A11yPostToPython("a11y.mark","apartment-select-" + String(info.id) + "-" + String(selected));
+            if(!selected) { this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|action unavailable")); }
+         }
+         catch(e:Error) { this.mA11yActivating = false; this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|action unavailable")); }
+         return true;
+      }
+
+      public function A11yScenarioText(item:DisplayObject, result:Array) : void
+      {
+         try
+         {
+            var card:DisplayObject = item;
+            if(card != null && card.parent != null && getQualifiedClassName(card.parent) == "widgets.shared.controls.Scenarios::ScenarioCardCellView") { card = card.parent; }
+            if(card == null || getQualifiedClassName(card) != "widgets.shared.controls.Scenarios::ScenarioCardCellView") { return; }
+            var data:Object = Object(card)["ScenarioData"];
+            if(data == null) { return; }
+            // Use the native rendered name/difficulty/reward and native data
+            // for requirements and goals, even while the card back is hidden.
+            result.length = 0;
+            if(item != card) { this.A11yCollectText(item,result,0,true); }
+            var fields:Array = ["txtName","txtDifficulty","txtDescription","txtPremadeHousehold","txtRewardName"];
+            var index:int = 0;
+            while(index < fields.length)
+            {
+               if(fields[index] in card) { this.A11yCollectText(Object(card)[fields[index]] as DisplayObject,result,0,true); }
+               index = index + 1;
+            }
+            var lists:Array = [data.roles,data.requirements,data.goals];
+            var group:int = 0;
+            while(group < lists.length)
+            {
+               index = 0;
+               if(lists[group] != null)
+               {
+                  while(index < lists[group].length && index < 16)
+                  {
+                     result.push(String(999990 + group) + "|" + String(index) + "|" + lists[group][index].toString());
+                     index = index + 1;
+                  }
+               }
+               group = group + 1;
+            }
+         }
+         catch(e:Error) { }
+      }
+
       public function A11yMapLabel(item:DisplayObject) : String
       {
          var name:String = item != null ? getQualifiedClassName(item) : "";
@@ -6618,6 +7061,14 @@ package olympus.core
          var label:String = "";
          try
          {
+            var apartment:Object = this.A11yPlexInfo(item);
+            if(apartment != null)
+            {
+               data = apartment.lot;
+               label = data.lotName != null ? String(data.lotName) : "";
+               if(label.length == 0 && data.lotDescriptionData != null) { label = data.lotDescriptionData.name.toString(); }
+               return label;
+            }
             // Use EA's public lot data, including localized custom lot names.
             // Keep the actual lot button and all native travel validation.
             if(item == null || !("GetData" in item) || !("lotId" in item)) { return ""; }
@@ -6727,6 +7178,11 @@ package olympus.core
       public function A11yActionProxy(item:DisplayObject) : DisplayObject
       {
          if(item == null) { return null; }
+         if(getQualifiedClassName(item).indexOf("widgets.OptionsMenu.controls::") == 0)
+         {
+            var option:DisplayObject = this.A11yOptionsControl(item);
+            if(option != null) { return option; }
+         }
          if(this.mA11ySimplifiedMenus && this.A11ySaveChoice(item)) { return Object(item)["btnPlay"] as DisplayObject; }
          if(item.parent != null && "mcFilterBubble" in item.parent && Object(item.parent)["mcFilterBubble"] == item) { return Object(item.parent)["btnFilterPanel"] as DisplayObject; }
          if("btnSolve" in item) { return Object(item)["btnSolve"] as DisplayObject; }
@@ -6824,6 +7280,21 @@ package olympus.core
          var _loc2_:DisplayObject = param1;
          var _loc3_:int = 0;
          var _loc4_:Object = null;
+         var panel:DisplayObject = param1;
+         var panelDepth:int = 0;
+         var panelName:String = null;
+         // These HUD panels instantiate their contents in full. Simology's
+         // outer ScrollList contains ONE SummaryPanelContent cell, not one
+         // item per section. Re-entering it by data index restarts at Traits.
+         // Walk the collected controls and reveal them with the native slider;
+         // retain indexed navigation for pickers and other recycled lists.
+         while(panel != null && panelDepth < 24)
+         {
+            panelName = getQualifiedClassName(panel);
+            if(panelName == "widgets.Gameplay.SimInfoHUD.MotivePanel::SimInfoMotivePanelMain" || panelName == "widgets.Gameplay.SimInfoHUD.SummaryPanel::SimInfoSummaryPanelMain" || panelName == "widgets.Gameplay.SimInfoHUD.AspirationPanel::SimInfoAspirationPanelMain") { return null; }
+            panel = panel.parent;
+            panelDepth = panelDepth + 1;
+         }
          while(_loc2_ != null && _loc3_ < 14)
          {
             try
@@ -7519,6 +7990,7 @@ package olympus.core
             if(!this.mA11yKeyboard) { return; }
             _loc2_ = this.mA11yFocused;
             if(this.A11ySeasonActivate(_loc2_,confirm)) { return; }
+            if(this.A11yPlexActivate(_loc2_)) { return; }
             if(this.A11yActivateCASName(_loc2_)) { return; }
             if(_loc2_ is TextField)
             {
@@ -7544,12 +8016,19 @@ package olympus.core
                this.A11yClearFocus();
                return;
             }
+            var readClass:String = getQualifiedClassName(_loc2_);
+            if(readClass == "widgets.shared.controls.Scenarios::ScenarioCardCellView" || readClass == "widgets.shared.controls.Scenarios::ScenarioCardListItemCellView" || readClass == "widgets.Gameplay.SocialMedia::SocialMediaFriendCellView" || readClass == "widgets.Gameplay.SocialMedia::SocialMediaFeedCellView" || readClass == "widgets.Gameplay.SocialMedia::SocialMediaMessageDMCellView" || readClass == "widgets.Gameplay.SocialMedia::SocialMediaReactionCellView" || readClass == "widgets.Gameplay.SituationDisplay.controls::SituationGoalCellView" || readClass == "widgets.Gameplay.SituationDisplay.controls::SituationGoalIconContainer" || readClass == "widgets.Gameplay.SituationDisplay.controls::SituationMajorGoalIconContainer")
+            {
+               this.A11yAnnounceDisplay(_loc2_,"a11y.focus_enc",true); return;
+            }
+
             if(this.A11yActionProxy(_loc2_) != _loc2_)
             {
                // A disabled proxied control (a child's calendar Add Event) used to
                // fail silently; the narrator translates this token. Ordinary
                // disabled controls still read EA's own reason.
                if(!this.A11yClickControl(this.A11yActionProxy(_loc2_))) { this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|action unavailable")); }
+               else if(getQualifiedClassName(_loc2_).indexOf("widgets.OptionsMenu.controls::") == 0 && this.A11yOptionsControl(_loc2_) != null && getQualifiedClassName(this.A11yOptionsControl(_loc2_)).indexOf("Checkbox") >= 0) { this.mA11yFocusPending = _loc2_; this.mA11yFocusDue = getTimer() + 150; }
                return;
             }
             if(this.A11yInformational(_loc2_) && !this.A11yIsFocusable(_loc2_)) { this.A11yAnnounceDisplay(_loc2_,"a11y.focus_enc",true); return; }
@@ -7562,6 +8041,7 @@ package olympus.core
             // A toggled picker row reads its new state through the existing
             // settled reread (no new listener); EA applies the toggle this frame.
             if(this.A11yPickerToggleCell(_loc2_)) { this.mA11yFocusPending = _loc2_; this.mA11yFocusDue = getTimer() + 150; }
+            else if(getQualifiedClassName(_loc2_) == "widgets.Gameplay.SimCamera.controls::CameraFilterCellView" || getQualifiedClassName(_loc2_) == "widgets.Gameplay.SituationCreation.controls::LocationCellView") { this.mA11yFocusPending = _loc2_; this.mA11yFocusDue = getTimer() + 150; }
             this.mA11yActivating = false;
             this.mA11yList = null;
             if(confirm && this.mA11ySimplifiedMenus && this.A11yConfirmSinglePicker(_loc2_)) { this.mA11yFocusPending = null; return; }
@@ -7662,16 +8142,24 @@ package olympus.core
          var _loc5_:* = undefined;
          try
          {
+            if(param1 != null && getQualifiedClassName(param1).indexOf("widgets.OptionsMenu.controls::") == 0 && getQualifiedClassName(param1).indexOf("OptionsCellView") >= 0)
+            {
+               var option:DisplayObject = this.A11yOptionsControl(param1);
+               return option != null && getQualifiedClassName(option).indexOf("Checkbox") >= 0 ? this.A11yCheckboxState(option) : "";
+            }
             if(this.A11ySingleFilterLabel(param1) == param1 && param1 != null)
             {
                return this.A11yCheckboxState(Object(param1.parent)["btnCheckBox"]);
             }
             _loc2_ = getQualifiedClassName(param1);
+            if(_loc2_ == "widgets.Gameplay.SimCamera.controls::CameraFilterCellView" || _loc2_ == "widgets.Gameplay.SituationCreation.controls::LocationCellView") { return Object(param1)["Selected"] == true ? "checked" : "unchecked"; }
+            var apartmentState:Object = this.A11yPlexInfo(param1);
+            if(apartmentState != null) { return apartmentState.enabled != true ? "action unavailable" : (apartmentState.selected ? "checked" : "unchecked"); }
             if(this.A11yPickerToggleCell(param1))
             {
                return Object(param1)["Selected"] == true ? "checked" : "unchecked";
             }
-            if(_loc2_.indexOf("Checkbox") >= 0)
+            if(_loc2_.indexOf("Checkbox") >= 0 || _loc2_ == "widgets.OptionsMenu::LeftLabelCheckBox")
             {
                _loc5_ = param1;
                if(_loc5_.Selected == true)
@@ -8078,6 +8566,37 @@ package olympus.core
                if("txtRestartRequiredLabel" in param1) { this.A11yCollectText(Object(param1)["txtRestartRequiredLabel"] as DisplayObject,_loc2_,0,param7); }
             }
             if(param6 == "a11y.widget_enc" || param6 == "a11y.focus_enc") { this.A11yRentalQuote(param1,_loc2_); this.A11yMoveInQuote(param1,_loc2_); this.A11yTransferQuote(param1,_loc2_); this.A11yMoveLabel(param1,_loc2_); this.A11yOptionsRowLabel(param1,_loc2_); }
+            if(param6 == "a11y.widget_enc" || param6 == "a11y.focus_enc")
+            {
+               var socialParent:DisplayObject = param1.parent;
+               if(socialParent != null)
+               {
+                  var socialClass:String = getQualifiedClassName(socialParent);
+                  if(socialClass == "widgets.Gameplay.SocialMedia::SocialMediaFriendCellView" || socialClass == "widgets.Gameplay.SocialMedia::SocialMediaFeedCellView" || socialClass == "widgets.Gameplay.SocialMedia::SocialMediaMessageDMCellView")
+                  {
+                     if("txtSimName" in socialParent && Object(socialParent)["txtSimName"] != null) { _loc2_.push("-999998|0|" + String(Object(socialParent)["txtSimName"].text)); }
+                     if("txtPostContent" in socialParent && Object(socialParent)["txtPostContent"] != null) { _loc2_.push("-999997|0|" + String(Object(socialParent)["txtPostContent"].text).substr(0,240)); }
+                  }
+               }
+            }
+
+            if(param1 is TextField && TextField(param1).type == "input")
+            {
+               var inputParent:DisplayObject = param1.parent;
+               var inputDepth:int = 0;
+               while(inputParent != null && inputDepth < 6)
+               {
+                  var inputClass:String = getQualifiedClassName(inputParent);
+                  if(inputClass == "widgets.Dialog.controls::TextInputCellView" || inputClass == "widgets.Dialog.controls::InlineTextInputCellView")
+                  {
+                     if("txtLabel" in inputParent && Object(inputParent)["txtLabel"] != null) { _loc2_.push("-999999|0|" + String(Object(inputParent)["txtLabel"].text)); }
+                     break;
+                  }
+                  inputParent = inputParent.parent; inputDepth = inputDepth + 1;
+               }
+            }
+
+            this.A11yScenarioText(param1,_loc2_);
             _loc7_ = this.A11yMapLabel(param1);
             if(_loc7_.length > 0) { _loc2_ = ["0|0|" + _loc7_]; }
             if("A11yMotiveText" in param1) { _loc2_ = ["0|0|" + Object(param1)["A11yMotiveText"]()]; }

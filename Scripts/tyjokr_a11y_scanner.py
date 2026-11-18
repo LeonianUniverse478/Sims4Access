@@ -14,13 +14,9 @@ How it stays in the game's own words:
   cannot turn a key into text, so the hash goes to the Flash layer in a
   message name ("A11y|loc|<hash>|<hash>"), the client resolves it in the
   player's language, and the text comes back on a11y.loc_enc.
-- Categories are the catalog's own, two levels deep. The main category is
-  the buy category the client reports for the object's definition
-  (build_buy.get_object_buy_category_flags: Comfort, Surfaces, Decorations,
-  Electronics, Appliances, Plumbing, Lighting, Kids, Activities and Skills,
-  Storage, Pets, Transportation), spoken with the catalog's own filter
-  labels; build-mode things (doors, gates, ladders, pools) sit under Build
-  and anything the catalog never sold under Misc. The subcategory is the
+- Yourself and other Sims are separate groups. Nearby Objects are grouped
+  by the object's build/buy tag or function, using the game's own labels.
+  The subcategory is the
   object's build/buy tag label (Beds, Sofas, Doors, or a function label for
   spawned and crafted things), from tyjokr_a11y_buycat (generated from the
   tuning dump and the client's KeysBB), resolved the same way. Sims use the
@@ -62,6 +58,9 @@ MAX_DISTANCE = 40.0        # metres: the default scanner range (RANGES); Sims ar
 _LOC_TIMEOUT = 0.6         # seconds to wait for the client before speaking without a name
 
 SIMS = 'SIMS'
+YOURSELF = 'YOURSELF'
+OBJECTS = 'OBJECTS'
+GROUP_TERMS = {YOURSELF: 'yourself', OBJECTS: 'nearby objects'}
 MISC = 'MISC'
 BUILD = 'BUILD'
 _COMPASS = ('north', 'north east', 'east', 'south east',
@@ -90,7 +89,7 @@ class Entry(object):
         self.bearing = bearing
         self.level_delta = level_delta
         self.category = category      # subcategory: a labelled tag name, SIMS or MISC
-        self.group = group            # main category: a buycat.GROUP_ORDER key
+        self.group = group            # main scanner group
         self.first_name = first_name
         self.availability = 'pending'
         self.role = ''                # Sims: a spoken role such as 'patient, waiting'
@@ -385,6 +384,12 @@ def _label_hash(key):
     return buycat.TAG_LABEL_HASH.get(key, buycat.MISC_LABEL_HASH)
 
 
+def _label_part(key):
+    if key in GROUP_TERMS:
+        return lang.t(GROUP_TERMS[key])
+    return ('loc', _label_hash(key))
+
+
 # ------------------------------------------------------------------ scanning
 
 def _has_interactions(obj):
@@ -677,9 +682,10 @@ def _scan(preserve=False):
     roles = _patient_roles()
     for other in sims:
         try:
-            entry = _entry_for(other, origin, _origin_level, True, SIMS, SIMS)
+            group = YOURSELF if other is sim else SIMS
+            entry = _entry_for(other, origin, _origin_level, True, group, group)
             entry.role = roles.get(other.id, '')
-            _by_group.setdefault(SIMS, []).append(entry)
+            _by_group.setdefault(group, []).append(entry)
         except Exception as ex:
             speech.log_line('scanner: sim entry failed: {!r}'.format(ex))
     count = 0
@@ -729,24 +735,24 @@ def _scan(preserve=False):
             entry.availability = verdict
             if entry.distance > limit:
                 continue
-            entry.category, entry.group, names, flags = _classification(obj, _last_scan)
-            _by_group.setdefault(entry.group, []).append(entry)
+            entry.category, catalog_group, names, flags = _classification(obj, _last_scan)
+            entry.group = OBJECTS
+            _by_group.setdefault(OBJECTS, []).append(entry)
             count += 1
-            if not preserve and entry.group in (MISC, BUILD) and len(notes) < 12:
+            if not preserve and catalog_group in (MISC, BUILD) and len(notes) < 12:
                 # Diagnostics for the two catch-alls: what did the client
                 # report, and which labelled tags did the definition carry?
                 labelled = sorted(name for name in names
                                   if name.startswith(('BuyCat', 'Build_', 'Func_')))
                 notes.append('{} {} flags=0x{:X} sub={} tags={}'.format(
-                    entry.group, getattr(obj.definition, 'name', '?'), flags,
+                    catalog_group, getattr(obj.definition, 'name', '?'), flags,
                     entry.category, ','.join(labelled[:6])))
         except Exception:
             continue
     for entries in _by_group.values():
         entries.sort(key=lambda e: (_SUB_RANK.get(e.category, 1 << 20), e.distance))
     _apply_range()
-    # Sims first (the active Sim is first inside), then the catalog's order.
-    _groups = [key for key in buycat.GROUP_ORDER if _by_group.get(key)]
+    _groups = [key for key in (YOURSELF, SIMS, OBJECTS) if _by_group.get(key)]
     summary = ' '.join('{}:{}/{}'.format(key, len(_by_group[key]),
                                          len(_subs_in(_by_group[key])))
                        for key in _groups)
@@ -885,19 +891,20 @@ def _place_part(entry):
 
 
 def _entry_parts(entry, index, total):
+    import tyjokr_a11y_cleanliness as cleanliness
     status = ', ' + lang.t('scanner unavailable') if entry.availability == 'locked' else ''
     if entry.role:
         status = ', ' + entry.role + status
-    return [_name_part(entry), status + ', ' + _place_part(entry),
+    return [_name_part(entry), cleanliness.suffix(entry) + status + ', ' + _place_part(entry),
             '. {} {} {}.'.format(index + 1, lang.t('of'), total)]
 
 
 def _sub_label_part(entries, entry):
     """The subcategory name, or None when the main category has a single
     subcategory that is the category itself (Sims, bare Misc)."""
-    if len(_subs_in(entries)) <= 1 and _label_hash(entry.category) == _label_hash(entry.group):
+    if len(_subs_in(entries)) <= 1 and _label_part(entry.category) == _label_part(entry.group):
         return None
-    return ('loc', _label_hash(entry.category))
+    return _label_part(entry.category)
 
 
 def _sub_count_part(entries, entry):
@@ -912,7 +919,7 @@ def _group_parts():
     key = _group_key()
     if key is None:
         return [lang.t('nothing nearby')]
-    parts = [('loc', _label_hash(key)),
+    parts = [_label_part(key),
              ', {} {}. '.format(len(entries), lang.t('items'))]
     entry = _current()
     if entry is not None:
@@ -921,7 +928,8 @@ def _group_parts():
             parts.append(sub)
             parts.append(_sub_count_part(entries, entry))
         parts.append(_name_part(entry))
-        parts.append((', ' + entry.role if entry.role else '') + ', ' + _place_part(entry) + '.')
+        import tyjokr_a11y_cleanliness as cleanliness
+        parts.append(cleanliness.suffix(entry) + (', ' + entry.role if entry.role else '') + ', ' + _place_part(entry) + '.')
     return parts
 
 
@@ -1077,13 +1085,13 @@ def _tree_parts():
         return [lang.t('nothing nearby')]
     entries = _entries()
     if _tree_level == 'groups':
-        return _kind('scanner category') + [('loc', _label_hash(_group_key())),
+        return _kind('scanner category') + [_label_part(_group_key()),
                 ', {} {}. {} {} {}.'.format(len(entries), lang.t('items'),
                     _group_index + 1, lang.t('of'), len(_groups))]
     subs = _subs_in(entries)
     siblings = [e for e in entries if e.category == entry.category]
     if _tree_level == 'subcategories':
-        return _kind('scanner subcategory') + [('loc', _label_hash(entry.category)),
+        return _kind('scanner subcategory') + [_label_part(entry.category),
                 ', {} {}. {} {} {}.'.format(len(siblings), lang.t('items'),
                     subs.index(entry.category) + 1, lang.t('of'), len(subs))]
     return _entry_parts(entry, siblings.index(entry), len(siblings))
@@ -1185,7 +1193,7 @@ def _do_step_sub(step):
     _tree_restore(subs[(subs.index(entry.category) + step) % len(subs)])
     _tree_level = 'items'
     _tree_remember()
-    _speak_parts([('loc', _label_hash(_current().category)), '. '] + _tree_parts())
+    _speak_parts([_label_part(_current().category), '. '] + _tree_parts())
 
 
 def _do_where():
@@ -1201,7 +1209,7 @@ def _do_where():
         parts.append(lang.t('nothing nearby'))
     else:
         entries = _entries()
-        parts.append(('loc', _label_hash(entry.group)))
+        parts.append(_label_part(entry.group))
         sub = _sub_label_part(entries, entry)
         if sub is not None:
             parts.append(', ')
@@ -1415,3 +1423,13 @@ try:
     _install_zone_hook()
 except Exception as _zone_ex:
     speech.log_line('scanner: zone hook install failed: {!r}'.format(_zone_ex))
+
+
+# Install only the remaining local extensions after module initialization,
+# on the simulation pump. Upstream owns the integrated contribution controls.
+try:
+    import tyjokr_a11y_extensions
+    import tyjokr_a11y_plus_core
+    tyjokr_a11y_plus_core.post(tyjokr_a11y_extensions.install)
+except Exception as _extensions_error:
+    speech.log_line('local extensions could not be queued: {!r}'.format(_extensions_error))

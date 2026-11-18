@@ -65,6 +65,12 @@ ROWS = [
         help='how far the scanner looks; Control Alt comma and Control Alt period change it'),
     Row('surface_layer_focus', 'bool', 'layer focus',
         help='Build cursor: Control Alt U and D choose a layer; number 1 focuses objects on it, number 4 names nearby layers'),
+    Row('chair_snapping', 'bool', 'experimental chair snapping',
+        help='dining and desk chairs: face a nearby table or focus it with 1; the game validates its native seat slot'),
+    Row('experimental_basement', 'bool', 'experimental basement creation',
+        help='Build helper basements use the native Basement Tool from ground level and verify the result below'),
+    Row('chair_alignment_hints', 'bool', 'chair-to-table orientation hints',
+        help='for dining and desk chairs, names the nearest table or desk and facing relation'),
     Row('experimental_bare_ground', 'bool', 'experimental bare-ground placement',
         help='Build cursor: needs natural ground; the game still checks the spot'),
     Row('experimental_water', 'bool', 'experimental water placement',
@@ -477,7 +483,7 @@ def _on_settings_pick(dialog):
     _show_settings_window()
 
 
-def _show_scanner_window():
+def _show_scanner_window(group=None):
     """Simulation thread. What the scanner sees, one row per thing."""
     global _scan_visual_id
     _cancel_dialog(_scan_visual_id)
@@ -490,6 +496,11 @@ def _show_scanner_window():
             _say(lang.t('nothing nearby'))
             return False
         groups, current_group, current_entry = scanner.snapshot()
+        if group is not None:
+            groups = [(key, entries) for key, entries in groups if key == group]
+        if not groups:
+            _say(lang.t('nothing nearby'))
+            return False
         total = sum(len(entries) for _key, entries in groups)
         dialog = _picker(
             'Scanner',
@@ -501,8 +512,9 @@ def _show_scanner_window():
         option = 0
         for group_key, entries in groups:
             subs = scanner.subs_in(entries)
+            label = scanner.GROUP_TERMS.get(group_key)
             dialog.add_row(ObjectPickerRow(
-                option_id=option, name=_ls_hash(scanner.label_hash(group_key)),
+                option_id=option, name=_raw(lang.t(label)) if label else _ls_hash(scanner.label_hash(group_key)),
                 row_description=_raw('{} items, {} subcategories{}'.format(
                     len(entries), len(subs), '  (current)' if group_key == current_group else '')),
                 row_tooltip=None, icon=None, tag=('group', group_key)))

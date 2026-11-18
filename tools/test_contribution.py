@@ -77,7 +77,7 @@ class MergedTests(unittest.TestCase):
 
     def test_settings_and_legacy_section(self):
         for key in ('scanner_range', 'surface_layer_focus', 'experimental_bare_ground',
-                    'experimental_water', 'experimental_ceiling', 'experimental_fence'):
+                    'experimental_water', 'experimental_ceiling', 'experimental_fence', 'chair_alignment_hints'):
             self.assertIn(key, settings.DEFAULTS)
         text = settings._render({})
         self.assertIn('[build cursor]', text)
@@ -85,6 +85,10 @@ class MergedTests(unittest.TestCase):
         self.assertEqual(settings._FILE_MAP[('contribution', 'scanner scope')], 'scanner_range')
         stored = dict(settings._stored)
         try:
+            self.assertEqual(settings._FILE_MAP[('contribution', 'chair alignment hints')], 'chair_alignment_hints')
+            settings._apply_value('chair_alignment_hints', 'off')
+            self.assertIs(settings._stored['chair_alignment_hints'], False)
+            self.assertIn('chair alignment hints = off', settings._render(settings._stored))
             settings._apply_value('scanner_range', 'Whole  Lot')
             self.assertEqual(settings._stored['scanner_range'], 'whole lot')
         finally:

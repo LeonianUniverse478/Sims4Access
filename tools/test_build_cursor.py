@@ -149,7 +149,9 @@ class CursorTests(unittest.TestCase):
         self.spoken, self.sent = [], []
         self.fits = {}
         patches = [
-            patch.dict('sys.modules', {'tyjokr_a11y_place': self.place}),
+            patch.dict('sys.modules', {'tyjokr_a11y_place': self.place,
+                # Chair behavior has native-transaction coverage in test_chair_snapping.
+                'tyjokr_a11y_chair_snap': types.SimpleNamespace(try_place=lambda *a:None,fit_parts=lambda *a:None)}),
             patch.object(grid, 'active', return_value=True),
             patch.object(grid, '_surface', return_value='surface'),
             patch.object(grid, '_flash', side_effect=self.sent.append),

@@ -131,6 +131,32 @@ def _objects_here(frame):
     return [obj for obj in tiles.objects_on(frame, i, j, grid._level) if not getattr(obj, "is_sim", False)]
 
 
+def _focus_objects(objects):
+    """Return tile objects followed by their attached contents."""
+    import tyjokr_a11y_tiles as tiles
+    result, seen = [], set()
+
+    def add(obj, depth):
+        obj_id = getattr(obj, "id", None)
+        if obj_id is None or obj_id in seen or getattr(obj, "is_sim", False):
+            return
+        seen.add(obj_id)
+        result.append(obj)
+        if depth >= 4:
+            return
+        try:
+            children = list(tiles.children_on(obj))
+        except Exception:
+            children = []
+        children.sort(key=lambda child: int(getattr(child, "id", 0)))
+        for child in children:
+            add(child, depth + 1)
+
+    for obj in sorted(objects, key=lambda item: int(getattr(item, "id", 0))):
+        add(obj, 0)
+    return result
+
+
 def _name_parts(obj):
     import tyjokr_a11y_grid as grid
     value = grid._name(obj)
@@ -147,7 +173,7 @@ def focus_detail(frame):
     import tyjokr_a11y_scanner as scanner
     objects = _objects_here(frame)
     i, j = grid._tile
-    matches = [obj for obj in objects if _matches(obj, frame, i, j, grid._level)]
+    matches = [obj for obj in _focus_objects(objects) if _matches(obj, frame, i, j, grid._level)]
     matches.sort(key=lambda obj: int(getattr(obj, "id", 0)))
     context = (grid._tile, grid._level, _mode)
     same = (_focus["tile"], _focus["level"], _focus["mode"]) == context
@@ -220,7 +246,7 @@ def focused_target():
         return None
     obj = services.object_manager().get(_focus["obj_id"])
     frame = tiles.frame()
-    if obj is None or frame is None or all(candidate.id != obj.id for candidate in _objects_here(frame)):
+    if obj is None or frame is None or all(candidate.id != obj.id for candidate in _focus_objects(_objects_here(frame))):
         clear_focus()
         return None
     return obj
@@ -260,3 +286,35 @@ def change_layer(delta):
         place._say_text("Target layer: {}. Press 1 to focus an object here.".format(label),
                         "Warstwa docelowa: {}. Naciśnij 1, aby wybrać obiekt.".format(label))
     return True
+
+
+def surface_slots(surface):
+    try:
+        return list(surface.get_runtime_slots_gen())
+    except Exception:
+        return []
+
+
+def selected_surface_slot(target_id, candidate, level):
+    """Only the explicitly focused surface; native slots decide compatibility."""
+    import services
+    import tyjokr_a11y_place as place
+    target = services.object_manager().get(target_id)
+    if target is None or target is not focused_target():
+        return None
+    if int(target.level) != int(level) or target.is_in_inventory() or target.is_hidden():
+        return None
+    owner = target.get_household_owner_id()
+    if owner and owner != place._household_id():
+        return None
+    if not services.active_lot().is_position_on_lot(target.position):
+        return None
+    for index, slot in enumerate(surface_slots(target)):
+        try:
+            valid = slot.empty and slot.is_valid_for_placement(obj=candidate)
+            _log('surface {} slot {} native validation={!r}'.format(target_id, index, valid))
+            if valid:
+                return target, slot
+        except Exception as exc:
+            _log('surface {} slot {} validation error: {!r}'.format(target_id, index, exc))
+    return None

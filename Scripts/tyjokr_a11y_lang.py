@@ -10,8 +10,26 @@ Translations are first-pass; refine per-language as feedback arrives.
 """
 
 _TRANSLATIONS = {
+    'yourself': {'en': 'Yourself', 'pl': 'Twój Sim'},
+    'Sims': {'en': 'Sims', 'pl': 'Simowie'},
+    'nearby objects': {'en': 'Objects', 'pl': 'Obiekty'},
+    'places': {'en': 'Places', 'pl': 'Miejsca'},
+    'home and lot': {'en': 'Home and lot', 'pl': 'Dom i parcela'},
+    'wishes and aspirations': {'en': 'Wants, fears and aspirations', 'pl': 'Pragnienia, obawy i aspiracje'},
+    'now': {'en': 'Now', 'pl': 'Teraz'},
+    'back to accessibility menu': {'en': 'Back to Accessibility menu', 'pl': 'Wróć do menu dostępności'},
+    'enable the scanner first': {'en': 'Enable the scanner first.', 'pl': 'Najpierw włącz skaner.'},
+    'guided placement': {'en': 'Guided placement', 'pl': 'Umieszczanie wspomagane'},
+    'undo last accessible placement': {
+        'en': 'Undo last accessible placement', 'pl': 'Cofnij ostatnie dostępne umieszczenie'},
+    'choose a floor to search': {'en': 'Choose a floor to search.', 'pl': 'Wybierz piętro do przeszukania.'},
+    'choose an area to buy and place': {
+        'en': 'Choose an area to buy and place the object if it fits.',
+        'pl': 'Wybierz obszar. Jeśli obiekt się zmieści, zostanie kupiony i umieszczony.'},
     'scanner category': {'en': 'Category', 'pl': 'Kategoria'},
     'scanner subcategory': {'en': 'Subcategory', 'pl': 'Podkategoria'},
+    'scanner dirty': {'en': 'dirty', 'pl': 'brudny'},
+    'scanner dusty': {'en': 'dusty', 'pl': 'zakurzony'},
     'phone': {'en': 'Phone', 'pl': 'Telefon'},
     # --- settings menu (tyjokr_a11y_menu) ---
     'on': {
@@ -892,6 +910,10 @@ _TRANSLATIONS.update({
         ('owned businesses', 'Owned businesses', 'Posiadane firmy'),
         ('calendar', 'Calendar', 'Kalendarz'),
         ('household sims', 'Household Sims', 'Simowie w rodzinie'),
+        ('away actions', 'Away actions', 'Działania poza parcelą'),
+        ('away actions instructions', 'Choose a household Sim who is away from this lot. Enter opens their available portrait actions. Escape closes.',
+         'Wybierz Sima z rodziny poza tą parcelą. Enter otwiera dostępne działania portretu. Escape zamyka.'),
+        ('no away household sims', 'No household Sims are away from this lot.', 'Wszyscy Simowie z rodziny są na tej parceli.'),
         ('known contacts', 'Known contacts', 'Znajomi'),
         ('build cursor', 'Build cursor', 'Kursor budowania'),
         ('build placement', 'Build placement', 'Umieszczanie obiektów'),
@@ -1145,6 +1167,11 @@ _TRANSLATIONS['scanner unavailable'] = {
     'sv': 'inte tillgänglig', 'da': 'ikke tilgængelig',
     'fi': 'ei käytettävissä', 'nb': 'utilgjengelig', 'cs': 'nedostupné',
 }
+
+
+_TRANSLATIONS['photography controls'] = {'en': 'Photography controls', 'de': 'Fotosteuerung'}
+_TRANSLATIONS['current event goals'] = {'en': 'Current event goals', 'de': 'Aktuelle Veranstaltungsziele'}
+_TRANSLATIONS['event goals unavailable'] = {'en': 'Goals are not available for this event right now.', 'de': 'Die Ziele dieser Veranstaltung sind gerade nicht verfügbar.'}
 
 
 def _detect_lang():

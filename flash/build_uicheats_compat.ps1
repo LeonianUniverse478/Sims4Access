@@ -18,7 +18,8 @@
 # Tools: TS4_JAVA, TS4_FFDEC and TS4_FFDEC_HELPERS as in rebuild_all.ps1.
 # Then:  python build_compat_package.py <same scratch>
 param(
-    [Parameter(Mandatory=$true)][string]$WorkDir
+    [Parameter(Mandatory=$true)][string]$WorkDir,
+    [string]$BaseDir
 )
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -28,8 +29,12 @@ $ffdec = Get-A11yFfdec
 $template = Join-Path $here "TooltipManager_patched.as"
 $extra = Join-Path $here "extra-classes"
 $base = Join-Path $here "uicheats-base"
+if ($BaseDir) { $base = (Resolve-Path -LiteralPath $BaseDir).Path }
 $gfx = Join-Path $WorkDir "gfx"
 New-Item -ItemType Directory -Force $gfx | Out-Null
+$purchaseCompat = Join-Path $gfx 'PurchasePickerCellView_UICheats.as'
+& py -3.7 (Join-Path $here 'prepare_uicheats_purchase.py') $purchaseCompat
+if ($LASTEXITCODE -ne 0) { throw 'UI Cheats purchase source preparation failed' }
 
 $cell = Join-Path $extra "CatalogImageCellView.as"
 $cellClass = "widgets.BuildBuy.controls.CatalogImageCellView"
@@ -42,7 +47,7 @@ $movies = [ordered]@{
     # UIC v1.59.1 grew its override set: SimHub (our mood narration) and
     # PickersPurchase (our purchase-cart narration) now collide too.
     'SimHub'              = @("widgets.Gameplay.SimHub.controls.MoodContainer", (Join-Path $extra "MoodContainer.as"))
-    'PickersPurchase'     = @("widgets.Pickers.controls.PurchasePicker.PurchasePickerCellView", (Join-Path $extra "PurchasePickerCellView.as"), "widgets.Pickers.PickersPurchaseMain", (Join-Path $extra "PickersPurchaseMain.as"))
+    'PickersPurchase'     = @("widgets.Pickers.controls.PurchasePicker.PurchasePickerCellView", $purchaseCompat, "widgets.Pickers.PickersPurchaseMain", (Join-Path $extra "PickersPurchaseMain.as"))
 }
 
 $batchClasses = Get-A11yHelpers

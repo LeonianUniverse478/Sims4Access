@@ -36,9 +36,13 @@ test('Activation speaks the unavailable token when the proxy click is refused',(
  const activate=body('A11yActivate').text;
  const branch=activate.indexOf('if(this.A11yActionProxy(_loc2_) != _loc2_)');
  assert(branch>=0,'proxy branch present');
- const window=activate.slice(branch,branch+600);
+ // Inspect the entire proxy branch: settings' settled reread can make
+ // it longer than the old arbitrary 600-character window.
+ const end=activate.indexOf('if(this.A11yInformational(_loc2_)',branch);
+ assert(end>branch,'next activation branch present');
+ const window=activate.slice(branch,end);
  assert(/if\(!this\.A11yClickControl\(this\.A11yActionProxy\(_loc2_\)\)\)\s*\{\s*this\.A11yPostToPython\("a11y\.widget_enc",encodeURIComponent\("0\|0\|action unavailable"\)\);\s*\}/.test(window),'refused click is announced');
- assert(/return;/.test(window),'branch still returns');
+ assert(/return;\s*}\s*$/.test(window),'proxy branch returns before generic dispatch');
 });
 test('Disabled proxy targets are still refused by A11yClickControl',()=>{
  const click=method('A11yClickControl');
@@ -98,7 +102,7 @@ test('Purchase rows, non-picker owners and cells without Selected are not toggle
 test('Checkbox state reads Selected on toggle cells before the Checkbox class path',()=>{
  const state=body('A11yCheckboxState').text;
  const branch=state.indexOf('if(this.A11yPickerToggleCell(param1))');
- const checkbox=state.indexOf('if(_loc2_.indexOf("Checkbox") >= 0)');
+ const checkbox=state.indexOf('if(_loc2_.indexOf("Checkbox") >= 0');
  assert(branch>=0&&checkbox>branch,'toggle-cell branch precedes the Checkbox branch');
  assert(/return Object\(param1\)\["Selected"\] == true \? "checked" : "unchecked";/.test(state.slice(branch,branch+300)));
 });

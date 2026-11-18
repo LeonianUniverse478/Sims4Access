@@ -593,7 +593,7 @@ def _wall_parts(f, all_sides=False, objects=None):
     return parts
 
 
-def _room_parts(f):
+def _room_parts_base(f):
     import tyjokr_a11y_tiles as tiles
     i, j = _tile
     facts = tiles.ground(f, i, j, _level)
@@ -602,7 +602,7 @@ def _room_parts(f):
     parts = []
     previous_room, previous_outside = _last_room
     import tyjokr_a11y_rooms as rooms
-    label = rooms.label_for(room, _level) if room is not None and not outside else None
+    label = rooms.display_name(room, _level) if room is not None and not outside else None
     if previous_outside is not None and outside is not None and outside != previous_outside:
         if outside:
             parts.append(_text('Outside. ', 'Na zewnątrz. '))
@@ -615,7 +615,7 @@ def _room_parts(f):
     return parts, facts
 
 
-def _fit_parts(f, with_facing=True, objects=None):
+def _fit_parts_base(f, with_facing=True, objects=None):
     """What the chosen object would do on this tile at the current facing."""
     import tyjokr_a11y_place as place
     import tyjokr_a11y_tiles as tiles
@@ -623,6 +623,9 @@ def _fit_parts(f, with_facing=True, objects=None):
     if item is None:
         return []
     need = place.requirement(item['id'])
+    import tyjokr_a11y_chair_snap as chair_snap
+    snap_parts=chair_snap.fit_parts(item,f)
+    if snap_parts is not None:return snap_parts
     i, j = _tile
     import tyjokr_a11y_surfaces as surfaces_mod
     if need == 'wall':
@@ -793,6 +796,20 @@ def _build_place():
     import tyjokr_a11y_surfaces as surfaces_mod
     if surfaces_mod.handles(need):
         return surfaces_mod.place(item, need)
+    import tyjokr_a11y_chair_snap as chair_snap
+    snap_frame=tiles.frame()
+    if snap_frame is not None:
+        snapped=chair_snap.try_place(item,snap_frame)
+        if snapped is not None:
+            _offer=None
+            return snapped
+    import tyjokr_a11y_layers as layers
+    focused = layers.focused_target() if need in (None, 'slot') else None
+    if focused is not None and layers.surface_slots(focused):
+        target = cursor()
+        if target is None:
+            return False
+        return place.place(target[0], _level, _surface(), surface_id=focused.id)
     f = tiles.frame()
     if f is None:
         return False
@@ -930,3 +947,15 @@ def command(action: str = 'toggle', _connection=None):
         import tyjokr_a11y_build as build
         return build.refuse_disabled()
     return on_key(action)
+
+
+# DaRainbowGirlXX (merged 2026-11-14): chair-to-table orientation hints and
+# the optional lot-planning description of each tile.
+def _fit_parts(f, with_facing=True, objects=None):
+    import tyjokr_a11y_chair_alignment as chair_alignment
+    return chair_alignment.fit_parts(f, with_facing=with_facing, objects=objects)
+
+
+def _room_parts(f):
+    import tyjokr_a11y_lot_grid as lot_grid
+    return lot_grid.room_parts(f)

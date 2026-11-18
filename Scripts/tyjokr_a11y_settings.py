@@ -35,6 +35,9 @@ DEFAULTS = {
     # Build cursor (contributed by DaRainbowGirlXX): target-layer focus and
     # experimental placement on bare ground, water, ceilings and fences
     'surface_layer_focus': True,
+    'chair_alignment_hints': True,
+    'chair_snapping': True,
+    'experimental_basement': True,  # Build helper: basements through the game's Basement tool
     'experimental_bare_ground': True,
     'experimental_water': True,
     'experimental_ceiling': True,
@@ -80,6 +83,9 @@ _FILE_MAP = {
     ('features', 'scanner mode'): 'scanner_mode',
     ('features', 'scanner range'): 'scanner_range',
     ('build cursor', 'layer focus'): 'surface_layer_focus',
+    ('build cursor', 'chair alignment hints'): 'chair_alignment_hints',
+    ('build cursor', 'chair snapping'): 'chair_snapping',
+    ('build cursor', 'basement'): 'experimental_basement',
     ('build cursor', 'bare ground'): 'experimental_bare_ground',
     ('build cursor', 'water'): 'experimental_water',
     ('build cursor', 'ceiling'): 'experimental_ceiling',
@@ -87,6 +93,8 @@ _FILE_MAP = {
     # legacy: the contribution's own section (October 2026), still read
     ('contribution', 'scanner scope'): 'scanner_range',
     ('contribution', 'surface layer focus'): 'surface_layer_focus',
+    ('contribution', 'chair alignment hints'): 'chair_alignment_hints',
+    ('contribution', 'experimental basement'): 'experimental_basement',
     ('contribution', 'experimental bare ground'): 'experimental_bare_ground',
     ('contribution', 'experimental water'): 'experimental_water',
     ('contribution', 'experimental ceiling'): 'experimental_ceiling',
@@ -106,7 +114,8 @@ _BOOL_KEYS = ('numpad_navigation', 'sim_actions', 'object_names', 'keyboard',
               'captions', 'startup', 'travel_list', 'build_controls',
               'scanner_mode', 'logging', 'auto_focus', 'surface_layer_focus',
               'experimental_bare_ground', 'experimental_water', 'experimental_ceiling',
-              'experimental_fence')
+              'experimental_fence', 'chair_alignment_hints', 'chair_snapping',
+              'experimental_basement')
 SCANNER_RANGES = ('6 meters', '12 meters', '24 meters', '40 meters',
                   'whole lot', 'this floor', 'this room')
 
@@ -145,6 +154,12 @@ build controls = {build_controls}
 # ceiling); number 1 focuses objects on it and number 4 names each nearby
 # object's layer (on/off)
 layer focus = {surface_layer_focus}
+# Optional chair/table and desk orientation announcements (on/off)
+chair alignment hints = {chair_alignment_hints}
+# Experimental native chair seats: face a nearby table/desk or focus it with 1
+chair snapping = {chair_snapping}
+# Experimental basements from the Build helper (Alt+B), through the game's Basement tool (on/off)
+basement = {experimental_basement}
 # Experimental placement; the game's own placement test still decides (on/off)
 bare ground = {experimental_bare_ground}
 water = {experimental_water}
@@ -363,6 +378,9 @@ def _render(stored):
         'scanner_mode': 'on' if sget('scanner_mode') else 'off',
         'scanner_range': sget('scanner_range'),
         'surface_layer_focus': 'on' if sget('surface_layer_focus') else 'off',
+        'chair_alignment_hints': 'on' if sget('chair_alignment_hints') else 'off',
+        'chair_snapping': 'on' if sget('chair_snapping') else 'off',
+        'experimental_basement': 'on' if sget('experimental_basement') else 'off',
         'experimental_bare_ground': 'on' if sget('experimental_bare_ground') else 'off',
         'experimental_water': 'on' if sget('experimental_water') else 'off',
         'experimental_ceiling': 'on' if sget('experimental_ceiling') else 'off',

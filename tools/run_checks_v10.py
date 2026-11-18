@@ -63,18 +63,24 @@ def main():
         log = build / ('v10-' + path.stem + '.log')
         log.write_text(output, encoding='utf-8')
         count = check_count(output)
+        skipped = (path.name == 'test_prelaunch_helper.py' and returncode == 77 and
+                   output.startswith('SKIP:'))
         passed = returncode == 0 and count > 0
         results.append({'suite': path.relative_to(ROOT).as_posix(),
                         'kind': 'python' if path.suffix == '.py' else 'as_source_fixture',
                         'returncode': returncode, 'checks': count, 'passed': passed,
+                        'skipped': skipped,
                         'log': log.relative_to(ROOT).as_posix(), 'log_sha256': sha(log)})
-        print('{}: {} ({} checks)'.format(path.name, 'PASS' if passed else 'FAIL', count), flush=True)
+        print('{}: {} ({} checks)'.format(path.name, 'SKIP' if skipped else ('PASS' if passed else 'FAIL'), count), flush=True)
         if not passed:
             print(output[-5000:], flush=True)
     stable = inputs == input_hashes()
     passed = bool(results) and stable and all(item['passed'] for item in results)
     report = {'started_utc': started, 'finished_utc': datetime.now(timezone.utc).isoformat(),
-              'passed': passed, 'input_stable': stable, 'inputs': inputs, 'results': results}
+              'passed': passed, 'input_stable': stable,
+              'skipped_suites': [item['suite'] for item in results if item['skipped']],
+              'failed_suites': [item['suite'] for item in results if not item['passed'] and not item['skipped']],
+              'inputs': inputs, 'results': results}
     (build / 'v10-checks.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print('{} checks across {} isolated suites (includes repeated imported checks).'.format(
         sum(item['checks'] for item in results), len(results)))

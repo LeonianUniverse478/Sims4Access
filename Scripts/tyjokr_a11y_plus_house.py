@@ -314,23 +314,11 @@ def side_between(tile_a, tile_b):
 
 
 def build_my_house():
-    if not build.in_build_mode():
-        core.speak("Go to Build mode first. Press F2, on a laptop Fn+F2.")
-        return
-    rows = [(label, None, kinds) for (label, kinds) in PRESETS]
-    rows += [(label, "Uses less of the lot: 10 by 11 meters, with stairs in the hallway.", ("two", v))
-             for (label, v) in TWO_FLOOR_PRESETS]
-    rows.append(("Choose the rooms yourself", "Add rooms one at a time. One floor.", "custom"))
-
-    def picked(value):
-        if value == "custom":
-            _custom([])
-        else:
-            _show_plan(value)
-    core.choose("Build my house",
-                "Choose the rooms. The house is built facing the street, with a front door into the living room, "
-                "a hallway, and a door from each room. You hear the plan and the price before anything is built.",
-                rows, picked, tag="build")
+    """Build my house (DaRainbowGirlXX's workflow, merged 2026-11-14): one
+    builder with ready-made or custom layouts, stories, basement and room names."""
+    import tyjokr_a11y_house_workflow as workflow
+    workflow.install()
+    return workflow.open_builder()
 
 
 def _custom(kinds):
@@ -391,37 +379,10 @@ def _two_floor_text(p):
 
 
 def _show_plan(kinds):
-    try:
-        if isinstance(kinds, tuple):
-            p = make_two_floor_plan(kinds[1])
-        else:
-            p = make_plan(list(kinds))
-    except Exception:
-        core.log_exc("make plan")
-        core.speak("Sorry, the plan could not be made.")
-        return
-    if p.problem:
-        core.speak(p.problem)
-        return
-    walls = wall_meters(p) * WALL_PRICE
-    doors = len(p.doors) * 100
-    stairs = STAIR_PRICE if p.stairs else 0
-    cost = walls + doors + stairs
-    money = build.funds() or 0
-    text = "{} It costs about {:,} simoleons: {:,} for walls and floors, about {:,} for doors{}. You have {:,}.".format(
-        _plan_text(p), cost, walls, doors, ", about {:,} for the stairs".format(stairs) if stairs else "", money)
-    rows = [("Build it", "Takes a few minutes. Do not press keys until you hear that it is finished.", "go"),
-            ("Hear the plan again", None, "again"),
-            ("Cancel", None, None)]
-    if cost > money:
-        rows[0] = ("Not enough money", "Choose fewer rooms.", None)
-
-    def picked(value):
-        if value == "go":
-            start_build(p)
-        elif value == "again":
-            _show_plan(kinds)
-    core.choose("Your house plan", text, rows, picked, tag="build")
+    """Ready-made layouts go through the workflow's common review."""
+    import tyjokr_a11y_house_workflow as workflow
+    workflow.install()
+    return workflow._legacy_plan(kinds)
 
 # ---------------------------------------------------------------- building
 
@@ -501,7 +462,7 @@ def _pick_stairs():
     return (i, names[i])
 
 
-def place_stairs_worker(top, climb):
+def _place_stairs_worker_base(top, climb):
     """Worker thread only. Straight stairs on the ground floor going up to the floor above.
     top: lot tile (e, n) of the highest step; climb: direction (de, dn) going up.
     The pointer goes on the highest step. The game keeps the last way stairs were turned, so we
@@ -601,11 +562,11 @@ def start_build(p):
     threading.Thread(target=work, name="tyjokr_a11y_plus_house", daemon=True).start()
 
 
-def _say(text):
+def _say_base(text):
     core.post(core.speak, text)
 
 
-def _build(p):
+def _build_base(p):
     import tyjokr_a11y_plus_rooms as rooms
     start_money = build.on_main(build.funds) or 0
     if not _pick_tool("Room Tool"):
@@ -877,3 +838,25 @@ def name_a_room():
             core.speak("The room is now called {}.".format(text.strip()) if text.strip() else "Name removed.")
         core.ask_text("Room name", "Type a name, for example Kitchen or Shay's bedroom.", room.name, named)
     core.choose("Name a room", "Choose the room to name.", rows, got, tag="build")
+
+
+# DaRainbowGirlXX's house building, merged 2026-11-14. The building step runs
+# build_helpers (stairs scoped to the running plan) -> detached (detached
+# structure follow-up) -> house_planner (stacked-story follow-up) -> _build_base.
+def _build(p):
+    import tyjokr_a11y_build_helpers as helpers
+    helpers.install()
+    return helpers._house_build(p)
+
+
+def place_stairs_worker(top, climb):
+    """Stacked plans place their own stair transitions; otherwise the original."""
+    import tyjokr_a11y_build_helpers as helpers
+    helpers.install()
+    return helpers._stairs_for_plan(top, climb)
+
+
+def _say(text):
+    """A stopped basement build says why."""
+    import tyjokr_a11y_house_workflow as workflow
+    return workflow._say(text)
