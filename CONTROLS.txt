@@ -157,8 +157,11 @@ Guided placement is also in the Alt+B Build Helper.
 Choose Keyboard shortcuts in that menu to hear the controls.
 Ctrl+Shift+N: Read needs.
 Ctrl+Alt+L: Turn diagnostic logging on or off (TS4_Access.log next to the mod).
-Ctrl+Alt+V: Running events. Enter on one to send all guests home and end it,
-end it, or send all guests home. Your household is never sent away.
+V: Browse the current event's goals in Live mode. With several running events,
+choose one first. Use the arrows to read its native goals and Escape to leave.
+This replaces the game's video-recording shortcut while keyboard navigation owns it.
+Ctrl+Alt+V: Running events. Enter on one to read its current goals, send all
+guests home and end it, end it, or send all guests home. Your household is never sent away.
 Ctrl+Alt+M: Milestones of the active Sim (Growing Together). Enter on a
 category reads its milestones.
 Ctrl+Alt+K: Character values of the active Sim (Parenthood).

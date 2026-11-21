@@ -63,7 +63,7 @@ function goalFixture(){
  tab.OpenContentPanelWithId=id=>{assert.equal(id,content.Id);content.visible=true;};
  ui.mTooltipsLayer={addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:(name,fn)=>listeners.delete(name)};
  Object.assign(ui,{mA11yKeyboard:true,mA11yKeyboardLease:999999,mA11yActiveModalRoot:null,mA11yStatusScope:null,mA11yScope:null,mA11yPendingScope:null,mA11yGoalContent:null,mA11yGoalScope:null,mA11yGoalCheck:0,
-  A11yModalFrame(){},A11yLoadedWidget:name=>name==='SituationDisplay'?root:null,A11yWorldHudMode:()=>1,
+  A11yModalFrame(){},A11yEditing:()=>false,A11yLoadedWidget:name=>name==='SituationDisplay'?root:null,A11yWorldHudMode:()=>1,
   A11yIsLive:item=>{for(let n=item;n;n=n.parent)if(!n.visible||!n.stage)return false;return item!=null;},
   A11yFocusInto:scope=>{ui.mA11yPendingScope=scope;},A11yClearFocus:()=>{ui.cleared=true;},A11yPostToPython:(name,text)=>replies.push([name,decodeURIComponent(text)])});
  runtime.CommunicationManager={CallGameService:(name,data)=>{services.push([name,data]);if(name==='BBGetCurrentZoneId')return '9007199254740993';throw Error('Unexpected native action '+name);}};
@@ -81,6 +81,12 @@ test('wrong event identity or zone never opens another event panel',()=>{
 });
 test('a blocking modal prevents goal focus without closing the dialog',()=>{
  const f=goalFixture();f.ui.mA11yActiveModalRoot=new MovieClip('dialog');request(f);assert(f.replies[0][1].endsWith('|blocked'));assert.equal(f.content.visible,false);
+});
+test('editing or startup becoming active before the native reply prevents goal focus',()=>{
+ for(const change of ['editing','startup']){
+  const f=goalFixture();if(change==='editing')f.ui.A11yEditing=()=>true;else f.ui.mA11yStartupActive=true;
+  request(f);assert(f.replies[0][1].endsWith('|blocked'));assert.equal(f.content.visible,false);assert.equal(f.listeners.size,0);
+ }
 });
 test('event identity change or removal releases only the owned goal scope and listener',()=>{
  for(const change of ['id','visible','zone']){

@@ -644,6 +644,14 @@ def a11y_events(_connection=None):
     return events_window()
 
 
+@sims4.commands.Command('a11y.eventgoals_shortcut', command_type=sims4.commands.CommandType.Live)
+def a11y_eventgoals_shortcut(zone: str = '', _connection=None):
+    if not zone.startswith('zone:'):
+        return False
+    import tyjokr_a11y_event_goals as goals
+    return goals.open_current(zone[5:])
+
+
 @sims4.commands.Command('a11y.invitem_enc', command_type=sims4.commands.CommandType.Live)
 def a11y_invitem_enc(text: str = '', _connection=None):
     try:
