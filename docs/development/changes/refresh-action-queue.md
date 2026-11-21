@@ -9,3 +9,10 @@ Offline picker tests cover successive cancellations, refused and stale actions, 
 Rebased onto the 18 November dev build. The native picker continues to work
 from the new accessibility hub's Now submenu as well as Ctrl+Alt+Q. The
 existing picker tests and hub routing tests pass on this baseline.
+
+When EA temporarily provides no queue icons, the picker falls back to the
+Sim's native running and waiting interactions. It preserves native posture
+and cancellation flags, deduplicates IDs, and excludes finishing, canceled
+and hidden noncancelable actions. Existing icons remain authoritative.
+Regression tests cover missing icons, fallback cancellation and refresh,
+filtering, posture labels and the unchanged icon-backed path.

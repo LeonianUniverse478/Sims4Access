@@ -208,7 +208,30 @@ def _queue_entries(sim):
     the client draws: running (super, group and posture) first, then queued
     in order. Each is (info, interaction or None, state)."""
     from protocolbuffers import Sims_pb2
-    infos = [info for info in sim.ui_manager.get_interactions_gen() if not info.canceled]
+    infos = []
+    seen = set()
+    for info in sim.ui_manager.get_interactions_gen():
+        if info.canceled:
+            seen.add(info.interaction_id)
+        else:
+            infos.append(info)
+    queue = getattr(sim, 'queue', None)
+    if not infos and queue is not None:
+        # EA can briefly have no queue icons for an ongoing activity. Read
+        # the native running/queued interactions without inventing actions.
+        from itertools import chain
+        from types import SimpleNamespace
+        running = chain((queue.running,), sim.si_state.sis_actor_gen())
+        for state, actions in ((Sims_pb2.IQ_RUNNING, running), (Sims_pb2.IQ_QUEUED, queue)):
+            for action in actions:
+                if (action is None or action.is_finishing or action.id in seen
+                        or not (action.visible_as_interaction or action.user_cancelable)):
+                    continue
+                seen.add(action.id)
+                visual_type, _ = action.get_interaction_queue_visual_type()
+                infos.append(SimpleNamespace(interaction_id=action.id, display_name=action.get_name(),
+                                             ui_state=state, user_cancelable=action.user_cancelable,
+                                             is_visual_type_posture=lambda t=visual_type: t == Sims_pb2.Interaction.POSTURE))
     running = [info for info in infos if info.ui_state != Sims_pb2.IQ_QUEUED]
     queued = [info for info in infos if info.ui_state == Sims_pb2.IQ_QUEUED]
     entries = []

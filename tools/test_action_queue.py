@@ -17,7 +17,8 @@ import tyjokr_a11y_shortcuts as shortcuts
 keys = env.keys
 lang = env.lang
 RUNNING, QUEUED = 1, 0
-PB = types.SimpleNamespace(Sims_pb2=types.SimpleNamespace(IQ_QUEUED=QUEUED, IQ_RUNNING=RUNNING))
+PB = types.SimpleNamespace(Sims_pb2=types.SimpleNamespace(
+    IQ_QUEUED=QUEUED, IQ_RUNNING=RUNNING, Interaction=types.SimpleNamespace(POSTURE=3)))
 
 
 class Interaction:
@@ -40,6 +41,22 @@ def info(interaction_id, name, state, cancelable=True, posture=False, canceled=F
     return types.SimpleNamespace(interaction_id=interaction_id, display_name=name, ui_state=state,
                                  user_cancelable=cancelable, canceled=canceled,
                                  is_visual_type_posture=lambda: posture)
+
+
+def native_action(ident, name, cancelable=True, posture=False, visible=True, finishing=False):
+    action = Interaction(cancelable=cancelable)
+    action.id = ident
+    action.is_finishing = finishing
+    action.visible_as_interaction = visible
+    action.get_name = lambda: name
+    action.get_interaction_queue_visual_type = lambda: (3 if posture else 1, None)
+    return action
+
+
+class NativeQueue(list):
+    def __init__(self, running, waiting):
+        super().__init__(waiting)
+        self.running = running
 
 
 class Sim:
@@ -157,6 +174,48 @@ class ActionQueueTests(unittest.TestCase):
         self.assertFalse(rows['Chat']())
         self.assertEqual(chat.cancels, [])
         self.assertEqual(self.spoken, [lang.t('sim unavailable')])
+
+    def test_missing_icons_show_native_actions_and_still_refresh_after_cancel(self):
+        watch = native_action(1, 'Watch TV')
+        sit = native_action(2, 'Sit', cancelable=False, posture=True)
+        eat = native_action(3, 'Eat')
+        self.sim = Sim([], {1: watch, 2: sit, 3: eat})
+        self.sim.queue = NativeQueue(watch, (watch, eat))
+        self.sim.si_state = types.SimpleNamespace(sis_actor_gen=lambda: iter((watch, sit)))
+        self.assertTrue(hub.action_queue())
+        rows = self.rows()
+        self.assertEqual([row[0] for row in rows], ['Cancel all actions', 'Watch TV', 'Sit', 'Eat'])
+        self.assertEqual(rows[1][1], 'Doing now. Chosen by you. Enter cancels')
+        self.assertEqual(rows[2][1], 'Current posture. Chosen by you. This action cannot be canceled.')
+        self.assertEqual(rows[3][1], 'Waiting, 1 of 1. Chosen by you. Enter cancels')
+        self.assertTrue(rows[1][2]())
+        self.assertEqual(watch.cancels, ['TS4 Access action queue'])
+        self.assertEqual([row[0] for row in self.windows[-1][1]], ['Sit', 'Eat'])
+        self.assertEqual(self.selections[-1], 0)
+
+    def test_native_fallback_excludes_canceled_finishing_and_hidden_actions(self):
+        actions = [native_action(1, 'Already canceled'), native_action(2, 'Finishing', finishing=True),
+                   native_action(3, 'Hidden', visible=False, cancelable=False),
+                   native_action(4, 'Cancelable', visible=False),
+                   native_action(5, 'Visible', cancelable=False)]
+        self.sim = Sim([info(1, 'Canceled icon', RUNNING, canceled=True)],
+                       {action.id: action for action in actions})
+        self.sim.queue = NativeQueue(actions[0], actions)
+        self.sim.si_state = types.SimpleNamespace(sis_actor_gen=lambda: iter((None,) + tuple(actions)))
+        self.assertTrue(hub.action_queue())
+        self.assertEqual([row[0] for row in self.rows()], ['Cancelable', 'Visible'])
+        self.assertEqual([entry[0].interaction_id for entry in hub._queue_entries(self.sim)], [4, 5])
+
+    def test_existing_icons_remain_authoritative_over_native_fallback(self):
+        watch = native_action(1, 'Native title')
+        self.sim = Sim([info(1, 'Icon title', QUEUED)], {1: watch})
+        self.sim.queue = NativeQueue(watch, (native_action(2, 'Not in icons'),))
+        def unused_running_actions():
+            raise AssertionError('Native fallback must not run while icons exist')
+        self.sim.si_state = types.SimpleNamespace(sis_actor_gen=unused_running_actions)
+        self.assertTrue(hub.action_queue())
+        self.assertEqual([row[0] for row in self.rows()], ['Icon title'])
+        self.assertEqual(self.rows()[0][1], 'Waiting, 1 of 1. Chosen by you. Enter cancels')
 
     def test_cancel_all_and_refusals(self):
         a, b, c = Interaction('pie'), Interaction('autonomy', accepts=False), Interaction('pie', cancelable=False)
