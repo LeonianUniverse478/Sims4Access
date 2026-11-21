@@ -5781,6 +5781,16 @@ package olympus.core
             if(this.mA11yPendingScope == null || this.mA11yScopeTries > 150)
             {
                this.mTooltipsLayer.removeEventListener(Event.ENTER_FRAME,this.A11yScopeFrame);
+               if(this.mA11yPendingScope != null && this.mA11yPendingScope == this.mA11yGoalScope && this.mA11yGoalId.length > 0)
+               {
+                  // The native container may exist before its rows arrive.
+                  // After the normal wait, an empty event must release its
+                  // owned scope instead of silently trapping scanner input.
+                  this.A11yEventGoalClear();
+                  this.mA11yNavQueue.length = 0;
+                  this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|event goals unavailable"));
+                  return;
+               }
                if(this.A11yIsLive(this.mA11yPendingScope)) { this.mA11yScope = this.mA11yPendingScope; }
                this.mA11yPendingScope = null;
                this.mA11yNavQueue.length = 0;

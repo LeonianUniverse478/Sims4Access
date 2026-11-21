@@ -103,6 +103,39 @@ test('moving into another scope removes the observer without clearing the new mo
 test('goal reader has a bounded lease and no persistent frame work after it ends',()=>{
  const f=goalFixture();request(f);now=400000;f.ui.A11yEventGoalFrame({});assert.equal(f.listeners.size,0);assert.equal(f.ui.mA11yGoalScope,null);now=10000;
 });
+function waitForGoalRows(f){
+ runtime.Dictionary=function(){};
+ Object.assign(f.ui,{mA11yScopeTries:0,mA11yScopeReadyAt:0,mA11yNavQueue:[],mA11yScopeHistory:[],mA11yAutoFocus:false,
+  A11yIndexMotiveLinks(){},A11yFocusHover(){},A11yAnnounceScope(){f.announced=true;},A11yDrainNav(){}});
+ f.ui.A11yScopeFrame=method(tooltip,'A11yScopeFrame');
+}
+test('a native goal row arriving during the normal wait still opens without unavailable feedback',()=>{
+ const f=goalFixture();request(f);waitForGoalRows(f);
+ for(let i=0;i<149;i++)f.ui.A11yScopeFrame({});
+ assert.equal(f.ui.mA11yPendingScope,f.goals);assert.equal(f.replies.length,1);
+ f.goals.add(new MovieClip('goal','widgets.Gameplay.SituationDisplay.controls::SituationGoalCellView'));
+ f.ui.A11yScopeFrame({});
+ assert.equal(f.ui.mA11yPendingScope,null);assert.equal(f.ui.mA11yScope,f.goals);
+ assert.equal(f.ui.mA11yStatusScope,f.goals);assert(f.announced);assert.equal(f.replies.length,1);
+});
+test('a truly empty event releases only its own scope and reports unavailable once',()=>{
+ const f=goalFixture();request(f);waitForGoalRows(f);
+ const previous=new MovieClip('previous');f.ui.mA11yScope=previous;
+ for(let i=0;i<151;i++)f.ui.A11yScopeFrame({});
+ assert.equal(f.ui.mA11yPendingScope,null);assert.equal(f.ui.mA11yStatusScope,null);
+ assert.equal(f.ui.mA11yGoalScope,null);assert.equal(f.ui.mA11yScope,previous);assert.equal(f.listeners.size,0);
+ assert.deepStrictEqual(f.replies[1],['a11y.widget_enc','0|0|event goals unavailable']);
+ f.ui.A11yScopeFrame({});assert.equal(f.replies.length,2);
+});
+test('empty photography and unrelated scopes retain their existing timeout behaviour',()=>{
+ for(const kind of ['camera','other']){
+  const f=goalFixture();request(f);waitForGoalRows(f);const other=new MovieClip(kind);
+  if(kind==='camera')f.ui.mA11yGoalId='';else f.ui.mA11yPendingScope=other;
+  const pending=f.ui.mA11yPendingScope;f.ui.mA11yScopeTries=150;f.ui.A11yScopeFrame({});
+  assert.equal(f.ui.mA11yScope,pending);assert.equal(f.ui.mA11yPendingScope,null);
+  assert.equal(f.ui.mA11yStatusScope,f.goals);assert.equal(f.replies.length,1);
+ }
+});
 test('photography route focuses an already open camera without taking a photo',()=>{
  const f=goalFixture(),camera=new MovieClip('SimCamera');f.ui.A11yLoadedWidget=name=>name==='SimCamera'?camera:null;f.ui.mA11yActiveModalRoot=camera;
  f.ui.A11yPhotography();assert.equal(f.ui.mA11yStatusScope,camera);assert.equal(f.ui.mA11yPendingScope,camera);assert(f.services.every(([name])=>name==='BBGetCurrentZoneId'));

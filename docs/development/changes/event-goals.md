@@ -15,6 +15,12 @@ calculate progress. The game retains authority over goals and their visibility.
 Arrows browse native goals; Escape leaves the existing reader. No events gives
 the existing no-events message; an event without an available goal HUD uses the
 reader's existing unavailable message.
+If the native goal container is visible but empty, wait for its delayed rows
+using the existing 150-frame scope limit. If no readable row arrives, release
+only that event's scope and frame listener and announce the same unavailable
+message once. Do not leave an empty status scope owning scanner input. Other
+panels, including photography (which shares the lifecycle), keep their existing
+timeout behaviour.
 
 V uses EA's `InputAction` guard in TooltipManager, not another keyboard poller.
 While keyboard navigation owns it, it replaces native video recording. It is
@@ -31,8 +37,11 @@ Tests exercise the actual Flash guard and request dispatch, single/multiple/no
 events, exact large IDs, selector callbacks, ended events, travel and blocking
 races, and the existing request/timeout lifecycle. Shortcut help includes V.
 The old PR's independent goal-traversal fixture was replaced because traversal
-is now owned and tested by the upstream reader. No narrator vocabulary change
-is needed; the two new help/picker strings use English source text.
+is now owned and tested by the upstream reader. The narrator also translates
+the existing event-unavailable token when Flash reports an empty-scope timeout.
+The two new help/picker strings use English source text. A delayed row on frame
+150, a truly empty event, retained unrelated focus, one-shot feedback and the
+unchanged photography timeout are covered by native-shaped source fixtures.
 
 Live testing remains pending: a scored date, an unscored event, simultaneous
 events, Escape back to the scanner, text input, and travel or event completion
