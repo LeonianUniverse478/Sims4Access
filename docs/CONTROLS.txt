@@ -258,8 +258,9 @@ so you never Tab around the catalog panels:
 - By room lists the rooms (Kitchen, Bathroom, Bedroom and the rest), then
   what goes in each (for example Refrigerators, Counters, Sinks). By
   function lists kinds of object (Comfort, Surfaces, Lighting and so on).
-- A kind of item lists every item with its price and how many colours it
-  comes in.
+- A kind of item lists every item with its price, how many colours it
+  comes in, and the catalog's own description of it, so you know what it is
+  before you buy. Search results include descriptions too.
 Arrows move, Enter opens or chooses, Escape goes back one level.
 Enter on an item picks it up, as clicking it in the catalog does. Then
 press Ctrl+Alt+B and place it with the Build cursor as usual.

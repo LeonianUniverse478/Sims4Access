@@ -61,7 +61,7 @@ Download **TS4_Access_Update.zip** from the latest release, then:
   (Ctrl+Alt+C), the action queue (Ctrl+Alt+Q), events (Ctrl+Alt+V), and
   Milestones and Character values for Growing Together and Parenthood.
 - **Build mode:** the catalog as a tree by room or function with search
-  (Ctrl+Alt+O and Ctrl+Alt+I), a tile-by-tile Build cursor, Tab straight into the catalog,
+  (Ctrl+Alt+O and Ctrl+Alt+I) that reads each item's description, a tile-by-tile Build cursor, Tab straight into the catalog,
   and Escape out of it.
 - **Build cursor and scanner additions** by DaRainbowGirlXX: scanner range,
   moving furniture, wall and room reading, target layers, room labels, and

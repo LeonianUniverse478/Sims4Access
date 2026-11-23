@@ -9,6 +9,22 @@ Install or update with TS4AccessUpdater.exe from the
 
 ---
 
+## build-2026-11-23_010240 (2026-11-23)
+
+A minor update.
+
+### Build mode: catalog descriptions
+
+- The catalog (Ctrl+Alt+O) now reads each item's own description from the
+  game's Buy catalog, so you know what an item is before you buy it. You hear
+  the name, the price, how many colours it comes in, then the full
+  description. Search results (Ctrl+Alt+I) include descriptions too.
+- Descriptions are read in full, however long. Formatting codes in the
+  game's text are left out.
+- Custom content with its own description works the same way.
+
+---
+
 ## build-2026-11-18_091845 (2026-11-18)
 
 ### Live mode: simpler scanner and a grouped Accessibility menu
