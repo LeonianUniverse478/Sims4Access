@@ -1070,6 +1070,15 @@ def _flash_reply_base(encoded=""):
             bits = item.split("~")
             if len(bits) >= 2:
                 _cat["items"].append((unquote(bits[0]), int(float(bits[1] or 0)), int(bits[2] or 1) if len(bits) > 2 else 1))
+                if len(bits) > 3 and bits[3]:
+                    # The catalog's own description (A11yCatalogBrowse), kept
+                    # beside the item list so its (name, price, colours) shape stays.
+                    _cat.setdefault("desc", {})[len(_cat["items"]) - 1] = unquote(bits[3])
+    elif kind == "catdesc" and len(parts) >= 4 and parts[1] == str(_cat["serial"]):
+        # One piece of a long description, in order (A11yCatalogBrowse).
+        descriptions = _cat.setdefault("desc", {})
+        index = int(parts[2])
+        descriptions[index] = descriptions.get(index, "") + unquote("|".join(parts[3:]))
     elif kind == "catend" and len(parts) >= 2 and parts[1] == str(_cat["serial"]):
         if _cat.get("quiet") is not None:
             _cat["quiet"].set()

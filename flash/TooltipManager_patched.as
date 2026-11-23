@@ -4178,6 +4178,12 @@ package olympus.core
          var product:Object = null;
          var index:int = 0;
          var start:int = 0;
+         var stop:int = 0;
+         var size:int = 0;
+         var desc:String = null;
+         var longs:Array = new Array();
+         var piece:int = 0;
+         var cut:int = 0;
          filter["productType"] = productType;
          if(search != "")
          {
@@ -4197,13 +4203,44 @@ package olympus.core
          {
             product = new productClass(raw[index]);
             this.mA11yPlusProducts.push(product);
-            items.push(encodeURIComponent(String(product["Name"])) + "~" + String(product["price"]) + "~" + String(product["variationCount"]));
+            // The catalog's own description (CatalogProduct.Description: the
+            // custom one, else the localized one), so players know what they
+            // buy (Leo, 2026-11-22). Never cut (Leo, 2026-11-23): a long one
+            // rides separately in catdesc pieces after its item's batch.
+            desc = "";
+            try { desc = product["Description"] == null ? "" : String(product["Description"]); } catch(e:Error) { desc = ""; }
+            if(desc == "null" || desc == "undefined") { desc = ""; }
+            longs.push(desc.length > 400 ? desc : "");
+            items.push(encodeURIComponent(String(product["Name"])) + "~" + String(product["price"]) + "~" + String(product["variationCount"]) + "~" + (desc.length > 400 ? "" : encodeURIComponent(desc)));
             index = index + 1;
          }
+         // Batches of at most 25 items and about 2,500 characters, so every
+         // message stays a short command line.
          while(start < items.length)
          {
-            this.A11yPlusReply("cat|" + serial + "|" + start + "|" + items.length + "|" + items.slice(start,start + 25).join("^"));
-            start = start + 25;
+            stop = start;
+            size = 0;
+            while(stop < items.length && stop - start < 25 && (stop == start || size + String(items[stop]).length < 2500))
+            {
+               size = size + String(items[stop]).length;
+               stop = stop + 1;
+            }
+            this.A11yPlusReply("cat|" + serial + "|" + start + "|" + items.length + "|" + items.slice(start,stop).join("^"));
+            // Long descriptions in order, 400 characters a piece, never
+            // splitting a surrogate pair; Python joins the pieces.
+            while(start < stop)
+            {
+               desc = String(longs[start]);
+               piece = 0;
+               while(piece < desc.length)
+               {
+                  cut = piece + 400;
+                  if(cut < desc.length && desc.charCodeAt(cut - 1) >= 55296 && desc.charCodeAt(cut - 1) <= 56319) { cut = cut - 1; }
+                  this.A11yPlusReply("catdesc|" + serial + "|" + start + "|" + encodeURIComponent(desc.substring(piece,cut)));
+                  piece = cut;
+               }
+               start = start + 1;
+            }
          }
          this.A11yPlusReply("catend|" + serial + "|" + items.length);
       }
