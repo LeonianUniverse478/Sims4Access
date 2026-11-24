@@ -9,6 +9,43 @@ Install or update with TS4AccessUpdater.exe from the
 
 ---
 
+## build-2026-11-24_082056 (2026-11-24)
+
+Seven contributions by **Ar-Anaviel**, merged from pull requests 3 to 9.
+None of them has been tested in a live game session as a whole yet.
+
+### Live mode: actions
+
+- **Q** cancels your Sim's current action and **Shift+Q** cancels every
+  action they can cancel, running or waiting, straight from the scanner.
+  Ctrl+Alt+Q still opens the action queue.
+- Cancelling an action in the action queue now keeps the queue open on the
+  nearest remaining action, instead of going back to the scanner.
+- If the game briefly has no queue icons, the queue and Q still find your
+  Sim's actions.
+
+### Live mode: scanner
+
+- Objects with servings, such as a platter, say how many servings are left.
+- The scanner reads an object's quality from the game's own hover tip: food,
+  drinks, plants, fish and anything else the game shows quality for.
+- **Ctrl+Backspace** puts the selected object in your Sim's inventory and
+  **Shift+Backspace** puts it in the household inventory on your home lot.
+  Press the same shortcut again within 15 seconds to confirm.
+
+### Mood, events and phone calls
+
+- **Ctrl+Alt+E** now opens the mood panel: Up and Down move through the
+  individual moodlets, each with its effect, cause and time left, and Escape
+  leaves. For the whole summary at once, choose Mood and moodlets in the
+  Accessibility menu.
+- **V** reads the current event's goals in Live mode. With several events
+  running, choose one first. This replaces the game's video-recording key
+  while keyboard navigation is on. Ctrl+Alt+V still manages running events.
+- Incoming phone calls from a Sim you know start with the caller's name.
+
+---
+
 ## build-2026-11-23_010240 (2026-11-23)
 
 A minor update.

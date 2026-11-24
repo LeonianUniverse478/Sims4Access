@@ -36,6 +36,9 @@ Extra scanner shortcuts:
 Ctrl+Alt+Space: Turn Scanner mode on or off.
 Ctrl+Alt+S: Refresh the scanner.
 Ctrl+Alt+W: Read your location.
+Ctrl+Backspace: Store the selected object in the active Sim's inventory.
+Shift+Backspace: Store the selected object in household inventory on the home lot.
+For either inventory, repeat the same shortcut within 15 seconds to confirm.
 
 MENUS AND DIALOGS
 
@@ -157,16 +160,22 @@ Guided placement is also in the Alt+B Build Helper.
 Choose Keyboard shortcuts in that menu to hear the controls.
 Ctrl+Shift+N: Read needs.
 Ctrl+Alt+L: Turn diagnostic logging on or off (TS4_Access.log next to the mod).
-Ctrl+Alt+V: Running events. Enter on one to send all guests home and end it,
-end it, or send all guests home. Your household is never sent away.
+V: Browse the current event's goals in Live mode. With several running events,
+choose one first. Use the arrows to read its native goals and Escape to leave.
+This replaces the game's video-recording shortcut while keyboard navigation owns it.
+Ctrl+Alt+V: Running events. Enter on one to read its current goals, send all
+guests home and end it, end it, or send all guests home. Your household is never sent away.
 Ctrl+Alt+M: Milestones of the active Sim (Growing Together). Enter on a
 category reads its milestones.
 Ctrl+Alt+K: Character values of the active Sim (Parenthood).
 Ctrl+Alt+C: Read the current day and time, including when the game is paused,
 then your household funds.
-Ctrl+Alt+E: Read the mood and its description, then every moodlet with
-its effect, time left, reason and description, all at once.
+Ctrl+Alt+E: Open the mood panel. Use Up and Down to hear individual moodlets,
+including their effects, causes and remaining time. Escape leaves the panel.
+For a continuous reading, choose Mood and moodlets in the accessibility menu.
 Ctrl+Alt+G: Read wants and fears.
+In Live mode with the scanner in control, Q cancels the active Sim's
+current action. Shift+Q cancels all cancelable running and queued actions.
 Ctrl+Alt+Q: Open the action queue. Each row is something the active Sim is
 doing or waiting to do, with who chose it. Enter cancels that action.
 Ctrl+Alt+P: Open a waiting call or text. With Simplified menus on and

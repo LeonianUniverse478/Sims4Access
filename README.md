@@ -76,6 +76,10 @@ Download **TS4_Access_Update.zip** from the latest release, then:
   mod businesses), and keyboard hiring.
 - **TS4 Access Plus** by Michael Maslo: Alt-key readouts and reminders, Sim
   creation without Create a Sim, and a Build helper.
+- **Live mode additions** by Ar-Anaviel: Q and Shift+Q cancel actions, the
+  action queue stays open after cancelling, servings and quality in the
+  scanner, storing objects in inventories, moodlets one by one (Ctrl+Alt+E),
+  event goals (V) and caller names on incoming calls.
 
 See the [changelog](CHANGELOG.md) for the full list.
 
@@ -99,6 +103,8 @@ Turn on logging with Ctrl+Alt+L, reproduce the problem, then send
 - **TS4 Access** by tyjokr.
 - **TS4 Access Plus** by Michael Maslo.
 - **Build cursor and scanner additions** by DaRainbowGirlXX.
+- **Quick cancel, inventory storing, servings and quality, moodlets, event
+  goals and caller names** by Ar-Anaviel.
 - **Lead development and test-build changes** by LeonianUniverse.
 - **Speech** through [Prism](https://github.com/ethindp/prism) by Ethin Probst,
   MPL-2.0, unmodified; its licences ship in `TS4_Access_SpeechPack`.
