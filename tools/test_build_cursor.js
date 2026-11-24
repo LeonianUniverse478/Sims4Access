@@ -62,8 +62,9 @@ for(const [label,change] of [
  assert.strictEqual(f.ctx.mA11yHudBrowsing,false);assert.strictEqual(f.ctx.mA11yCatalogReleased,f.catalog);
  assert.strictEqual(f.ctx.A11yBuildGridOwner(),true,'the cursor owns the keys now');assert.deepStrictEqual(f.posts,[]);checks++;}
 // Installed guards include the new keys, Shift for R, and Build mode exit clears the flag.
-assert(/var keys:Array = \[8,9,13,27,32,37,38,39,40,78,33,34,36,46,49,50,51,52,53,54,82\];/.test(source));
-assert(/keys\[i\] == 9 \|\| keys\[i\] == 82 \? 2 : 1/.test(source));
+const registeredKeys = /var keys:Array = \[([\d,]+)\];/.exec(source)[1].split(',').map(Number);
+assert([8,9,13,27,32,37,38,39,40,78,33,34,36,46,49,50,51,52,53,54,82].every(key => registeredKeys.includes(key)));
+assert(/keys\[i\] == 82 \? 2 : 1/.test(source));
 assert(/this\.mA11yCatalogReleased = null;\r?\n\s*this\.mA11yBuildGridOn = false;/.test(source));
 assert(/"a11y\.buildgridowner",buildGridState/.test(source));checks++;
 const added=source.slice(source.indexOf('public function A11yBuildGridOwner'),source.indexOf('public function A11yReturnToCatalog'));

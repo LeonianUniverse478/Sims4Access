@@ -1159,6 +1159,7 @@ _TRANSLATIONS.update({
                             'pl': 'Uproszczone menu są włączone: strzałki w górę i w dół albo Tab przechodzą o jedną opcję; Enter wybiera dostępną opcję pojedynczego wyboru; '
                                   'Spacja zaznacza opcję wielokrotnego wyboru, a potem Gotowe zatwierdza; Escape cofa'},
     'shortcut needs': {'en': 'Control + Shift + N: open Needs when no panel or text field owns focus'},
+    'shortcut quick cancel': {'en': 'In Live scanner mode, Q cancels the current action. Shift + Q cancels all actions the active Sim can cancel.'},
     'shortcut controls': {'en': 'UI controls'},
     'shortcut chords': {'en': 'Hold Control and Alt for these shortcuts'},
     'shortcut numpad': {'en': 'Optional numpad navigation is on. Use Num Lock'},

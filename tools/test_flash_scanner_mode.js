@@ -18,7 +18,7 @@ function method(name) {
     if (source[i] === '}') depth--;
     i++;
   }
-  const types = /:\s*(?:DisplayObject|Boolean|Number|String|Object|Array|Rectangle|Sprite|Point|int|Error|Class|Event)\b(?!\s*\()/g;
+  const types = /:\s*(?:DisplayObject|Boolean|Number|String|Object|Array|Rectangle|Sprite|Point|int|Error|Class|Event|TooltipManager)\b(?!\s*\()/g;
   const body = source.slice(start, i - 1).replace(types, '');
   return vm.runInContext('(function(' + signature[1].replace(types, '') + ') {' + body + '})', runtime, {filename: name});
 }
@@ -86,6 +86,34 @@ const menu = owner(); menu.mA11yActiveModalRoot = menu.modal;
 check(scannerOwner.call(menu) === false, 'not owner: a menu or dialog');
 const pending = owner(); pending.mA11yPendingScope = pending.modal;
 check(scannerOwner.call(pending) === false, 'not owner: a scope opening');
+// Register both Q bindings through the real guard installer. EA owns every
+// other modifier. A consumed press must never dispatch a second action.
+const registered = [];
+runtime.getDefinitionByName = name => ({
+  'olympus.input.InputTrigger': {FromKeyBinding(key, modifier) { return {key, modifier}; }},
+  'olympus.input.InputAction': {WhenTriggered(binding) {
+    return Object.assign(binding, {SetPriority() {}, AllowWhileModalOpen() {},
+      SetValidCheck(check) { this.valid = check; }, CallFunction(fn) { this.fire = fn; }});
+  }},
+  'olympus.io.InputActionManager': {RegisterAction(binding) { registered.push(binding); return true; }}
+})[name];
+const native = owner({mA11yNativeActions: [], A11yPostToPython() {},
+  A11yGuardCheck: method('A11yGuardCheck'), A11yGuardForBinding: method('A11yGuardForBinding'),
+  A11yGuardConsume: method('A11yGuardConsume')});
+method('A11yInstallKeyGuards').call(native);
+const queueKeys = registered.filter(binding => binding.key === 81);
+assert.deepStrictEqual(queueKeys.map(binding => binding.modifier), [0, 1]);
+for (const binding of queueKeys) {
+  check(binding.valid() && binding.fire() === false, 'consume the native Q binding once');
+  check(!native.mA11yGuardHeld[81], 'the native guard does not latch or replay Q');
+  for (const [field, value] of [['editing', true], ['hud', 2], ['mA11yActiveModalRoot', native.modal],
+      ['mA11yPendingScope', native.modal], ['mA11yScannerMode', false], ['mA11yKeyboardLease', 10]]) {
+    const old = native[field];
+    native[field] = value;
+    check(!binding.valid(), 'release Q for ' + field);
+    native[field] = old;
+  }
+}
 // Bridge: exactly three fields, on/off only; each message re-arms both reports.
 const bridge = owner({mA11yScannerMode: false, mA11yScannerOwnerReported: '1', mA11yScannerLiveReported: '1'});
 handleEncoded.call(bridge, 'A11y|scannermode|on');
