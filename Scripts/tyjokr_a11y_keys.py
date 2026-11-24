@@ -160,7 +160,7 @@ _blocking_explicit = None   # Flash's blocking bit for the current owner; None =
 _PHONE_BLOCKED = 'Close the current panel or dialog before opening a waiting call.'
 _input_epoch = 0
 _opening_keys = set()
-_ACTIVATION_KEYS = frozenset((0x0D, 0x20))
+_ACTIVATION_KEYS = frozenset((0x0D, 0x20, 0x51))
 
 
 def fence_opening_input():
@@ -465,6 +465,11 @@ def _scanner_key(intent, epoch):
     if not _scanner_routing():
         _log_route('dropped: the scanner no longer owns input', 'scanner ' + intent)
         return
+    if intent in ('cancelcurrent', 'cancelall'):
+        if _in_live() and not blocking_active():
+            import tyjokr_a11y_hub as hub
+            hub.cancel_from_scanner(intent == 'cancelall')
+        return
     import tyjokr_a11y_scanner as scanner
     _log_route('handled by scanner mode', 'scanner ' + intent)
     scanner.on_key(intent, on_simulation_thread=True)
@@ -562,9 +567,8 @@ def _scanner_call(name, *args):
 
 @sims4.commands.Command('a11y.scannerlive', command_type=sims4.commands.CommandType.Live)
 def a11y_scannerlive(state: str = '0', _connection=None):
-    """Flash: Live mode with scanner mode on, whatever owns the keys (menus
-    and text fields keep it on; Build, CAS and the main menu turn it off).
-    Drives the camera follow; only a change does anything."""
+    """Flash camera-follow eligibility. First-person view turns it off even
+    while the Live scanner owns the keys."""
     global _scanner_live
     if isinstance(state, int) and not isinstance(state, bool) and state in (0, 1):
         state = str(state)
@@ -1288,6 +1292,8 @@ def _plain_message(vk, ctrl=False, alt=False, shift=False):
         return 'A11yNeeds'
     if ctrl or alt:
         return None
+    if vk == 0x51 and _scanner_routing() and not blocking_active():
+        return 'A11yScanner:cancelall' if shift else 'A11yScanner:cancelcurrent'
     if vk == 0x09 and (not _editing_active or _modal_active):
         if shift and not _modal_active:
             # With no menu open Shift+Tab is the game's own first-person
@@ -1362,10 +1368,11 @@ def _loop():
     plain = {vk for _label, combos in BINDINGS.values() for vk, _alt in combos}
     plain.update(NUMPAD_BINDINGS)
     plain.update(BUILD_GRID_KEYS)
-    plain.add(0x4E)
+    plain.update((0x4E, 0x51))
     all_keys = plain | set(CHORDS)
     chord_seen_at = -10.0
     shift_before = False
+    ctrl_or_alt_before = False
     speech.log_line('keys: contextual polling started')
     while _running:
         try:
@@ -1418,8 +1425,12 @@ def _loop():
             epoch_at_sample = _input_epoch
             swallowed_before = _swallowed_snapshot()
             hook_known_before = frozenset(_hook_state)
-            alt = bool(read_key(VK_MENU) & 0x8000)
-            ctrl = bool(read_key(VK_CONTROL) & 0x8000)
+            alt_state = read_key(VK_MENU)
+            ctrl_state = read_key(VK_CONTROL)
+            alt = bool(alt_state & 0x8000)
+            ctrl = bool(ctrl_state & 0x8000)
+            ctrl_or_alt_tapped = ctrl_or_alt_before or bool((alt_state | ctrl_state) & 1)
+            ctrl_or_alt_before = ctrl or alt
             shift_state = read_key(VK_SHIFT)
             shift = bool(shift_state & 0x8000)
             # A fast Shift+Tab can release Shift before this pass reads Tab's
@@ -1544,6 +1555,10 @@ def _loop():
                     continue
                 down = held or tapped
                 message = _plain_message(vk, ctrl, alt, shift if held else shift_tapped)
+                # A complete modified Q tap between polls belongs to the
+                # chord (including AltGr), never to quick cancellation.
+                if vk == 0x51 and not held and ctrl_or_alt_tapped:
+                    message = None
                 if vk in _opening_keys:
                     # Consume the opener's key and its release, then allow
                     # a new physical press. Never synthesize another click.
