@@ -96,6 +96,7 @@ def sections(keyboard=None, numpad=None):
     if settings.get('simplified_menus', True):
         ordinary.append(lang.t('shortcut simplified'))
     ordinary.append(lang.t('shortcut needs'))
+    ordinary.append(lang.t('shortcut store'))
     chords = ['{} + {} + {}: {}'.format(lang.t('Control'), lang.t('Alt'),
               key_name(vk, keyboard), chord_label(intent))
               for vk, (intent, _repeat) in keyboard.CHORDS.items()]
