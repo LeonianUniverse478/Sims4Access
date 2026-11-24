@@ -1186,6 +1186,8 @@ _TRANSLATIONS['scanner unavailable'] = {
 
 _TRANSLATIONS['photography controls'] = {'en': 'Photography controls', 'de': 'Fotosteuerung'}
 _TRANSLATIONS['current event goals'] = {'en': 'Current event goals', 'de': 'Aktuelle Veranstaltungsziele'}
+_TRANSLATIONS['shortcut event goals'] = {'en': 'V: browse event goals in Live mode'}
+_TRANSLATIONS['event goals selection instructions'] = {'en': 'Choose an event to read its current goals. Escape closes without selecting.'}
 _TRANSLATIONS['event goals unavailable'] = {'en': 'Goals are not available for this event right now.', 'de': 'Die Ziele dieser Veranstaltung sind gerade nicht verfügbar.'}
 
 

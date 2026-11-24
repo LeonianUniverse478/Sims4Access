@@ -3220,6 +3220,33 @@ package olympus.core
          };
       }
 
+      public function A11yEventGoalShortcutValid() : Boolean
+      {
+         try
+         {
+            if(!this.mA11yKeyboard || getTimer() > this.mA11yKeyboardLease || this.mA11yStartupActive || this.A11yWorldHudMode() != 1 || this.A11yEditing()) { return false; }
+            this.A11yModalFrame();
+            return !this.A11yIsLive(this.mA11yActiveModalRoot) && !this.A11yIsModalScope(this.mA11yScope) && !this.A11yIsModalScope(this.mA11yPendingScope);
+         }
+         catch(e:Error) { }
+         return false;
+      }
+
+      public function A11yOpenEventGoals() : Boolean
+      {
+         try
+         {
+            if(!this.A11yEventGoalShortcutValid()) { return false; }
+            // Keep the zone a string: the native command parser must not turn
+            // a 64-bit identity into a floating-point number. The existing
+            // event reader owns selection, acknowledgements and HUD lifetime.
+            var zone:String = String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true));
+            this.A11yPostToPython("a11y.eventgoals_shortcut","zone:" + zone);
+         }
+         catch(e:Error) { this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|action unavailable")); }
+         return false;
+      }
+
       public function A11yInstallKeyGuards() : void
       {
          var actionClass:Object = null;
@@ -3250,6 +3277,12 @@ package olympus.core
                }
                i = i + 1;
             }
+            action = actionClass["WhenTriggered"](triggerClass["FromKeyBinding"](86,0));
+            action["SetPriority"](1000000);
+            action["AllowWhileModalOpen"](false);
+            action["SetValidCheck"](this.A11yEventGoalShortcutValid);
+            action["CallFunction"](this.A11yOpenEventGoals);
+            if(manager["RegisterAction"](action)) { this.mA11yNativeActions.push(action); }
             this.A11yPostToPython("a11y.mark","keyboard-native-guards-" + this.mA11yNativeActions.length);
          }
          catch(e:Error) { this.A11yPostToPython("a11y.mark","keyboard-guard-error"); }
@@ -3850,7 +3883,7 @@ package olympus.core
          try
          {
             this.A11yModalFrame();
-            if(!this.mA11yKeyboard || getTimer() > this.mA11yKeyboardLease || this.A11yWorldHudMode() != 1 || this.mA11yActiveModalRoot != null) { status = "blocked"; }
+            if(!this.mA11yKeyboard || getTimer() > this.mA11yKeyboardLease || this.mA11yStartupActive || this.A11yEditing() || this.A11yWorldHudMode() != 1 || this.mA11yActiveModalRoot != null) { status = "blocked"; }
             else if(String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true)) == zone)
             {
                var root:DisplayObject = this.A11yLoadedWidget("SituationDisplay") as DisplayObject;
@@ -5944,6 +5977,16 @@ package olympus.core
             if(this.mA11yPendingScope == null || this.mA11yScopeTries > 150)
             {
                this.mTooltipsLayer.removeEventListener(Event.ENTER_FRAME,this.A11yScopeFrame);
+               if(this.mA11yPendingScope != null && this.mA11yPendingScope == this.mA11yGoalScope && this.mA11yGoalId.length > 0)
+               {
+                  // The native container may exist before its rows arrive.
+                  // After the normal wait, an empty event must release its
+                  // owned scope instead of silently trapping scanner input.
+                  this.A11yEventGoalClear();
+                  this.mA11yNavQueue.length = 0;
+                  this.A11yPostToPython("a11y.widget_enc",encodeURIComponent("0|0|event goals unavailable"));
+                  return;
+               }
                if(this.A11yIsLive(this.mA11yPendingScope)) { this.mA11yScope = this.mA11yPendingScope; }
                this.mA11yPendingScope = null;
                this.mA11yNavQueue.length = 0;
