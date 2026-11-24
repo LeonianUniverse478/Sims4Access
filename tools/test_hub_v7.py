@@ -78,6 +78,26 @@ class HubTests(unittest.TestCase):
             opened.assert_not_called()
         env.keys._modal_active = False
 
+    def test_queue_refresh_holds_the_scanner_on_enter_only(self):
+        callback = Mock()
+        picker = types.SimpleNamespace(ObjectPickerRow=lambda **kw: kw)
+        with patch.dict(env.sys.modules, {'ui.ui_dialog_picker': picker}), \
+                patch.object(hub.menu, '_picker') as make, patch.object(hub.menu, '_cancel_dialog'), \
+                patch.object(env.keys, 'hold_scanner_resume') as hold:
+            dialog = make.return_value
+            dialog.dialog_id = 23
+            dialog.get_result_tags.return_value = [0]
+            for accepted in (False, True):
+                hub._window('action queue', 'action queue instructions', [('A', None, callback)],
+                            selected_index=0, refresh_on_select=True)
+                self.assertTrue(dialog.add_row.call_args[0][0]['is_selected'])
+                dialog.accepted = accepted
+                dialog.add_listener.call_args[0][0](dialog)
+                callback.assert_not_called()
+                self.assertEqual(hold.call_count, int(accepted))
+                env.drain()
+                self.assertEqual(callback.call_count, int(accepted))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

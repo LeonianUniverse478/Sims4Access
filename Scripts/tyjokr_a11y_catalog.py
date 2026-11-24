@@ -3,7 +3,7 @@
 Ctrl+Alt+O opens the tree: Search the catalog, By room, By function. A room or
 function lists the Buy panel's own subcategories (tyjokr_a11y_catalogtree, made
 from EA's BuildBuyNavigation movie), and a subcategory lists its items with
-price and colours. Enter on an item picks it up exactly as clicking it in the
+price, colours and the catalog's own description. Enter on an item picks it up exactly as clicking it in the
 catalog does, so the Build cursor (Ctrl+Alt+B) places it as usual. Escape goes
 back up one level. Ctrl+Alt+I goes straight to search.
 
@@ -94,8 +94,8 @@ def _request(product_type, tags, priority, search, on_done):
     build = _build()
     build._cat['serial'] += 1
     serial = build._cat['serial']
-    arrived = _Arrived(lambda: on_done(list(build._cat['items'])))
-    build._cat.update(items=[], total=0, name='', next='tree', quiet=arrived)
+    arrived = _Arrived(lambda: on_done(_with_descriptions(build._cat)))
+    build._cat.update(items=[], desc={}, total=0, name='', next='tree', quiet=arrived)
     build._send_ui('A11y|plus|browse|{}|{}|{}|{}|{}'.format(product_type, tags, priority, serial, quote(search, safe='')))
 
     def timeout():
@@ -118,15 +118,34 @@ def _browse(sub, back):
     _request(product_type, tags, priority, '', arrived)
 
 
-def _describe(price, colours):
+def _describe(price, colours, description=''):
     text = '{:,} simoleons'.format(price)
     if colours > 1:
         text += ', {} colours'.format(colours)
+    description = _clean(description)
+    if description:
+        text += '. ' + description
     return text
 
 
+def _clean(text):
+    """Catalog text as plain words: no markup tags, tokens or doubled spaces."""
+    import re
+    text = re.sub(r'<[^>]*>', ' ', str(text or ''))
+    text = re.sub(r'\{[^}]*\}', '', text)
+    return ' '.join(text.split())
+
+
+def _with_descriptions(cat):
+    """(name, price, colours, description) for each item that arrived."""
+    descriptions = cat.get('desc') or {}
+    return [(name, price, colours, descriptions.get(i, ''))
+            for (i, (name, price, colours)) in enumerate(cat['items'])]
+
+
 def _items(title, items, back):
-    rows = [(name, _describe(price, colours), i) for (i, (name, price, colours)) in enumerate(items)]
+    rows = [(name, _describe(price, colours, description), i)
+            for (i, (name, price, colours, description)) in enumerate(items)]
     _core().choose(title, '{} items. Enter picks one up to place. Escape goes back.'.format(len(items)), rows,
                    _pick, tag=_TAG, on_cancel=back)
 

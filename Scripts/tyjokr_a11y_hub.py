@@ -16,7 +16,7 @@ _dialog_id = None
 # checks and panel setup. The hub is closed before one of these is sent.
 PANELS = (
     ('needs', 'A11yNeeds'),
-    ('mood and moodlets', 'A11yMood'),
+    ('mood and moodlets', 'A11yMoodSummary'),
     ('wants and fears', 'A11yWants'),
     ('aspirations', 'OpenSimInfoAspirationPanel'),
     ('skills', 'OpenSimInfoSkillPanel'),
@@ -52,7 +52,7 @@ def _ui(message):
         distributor.ops.SendUIMessage(message))
 
 
-def _window(title, description, rows, localized_title=None):
+def _window(title, description, rows, localized_title=None, selected_index=None, refresh_on_select=False):
     """Rows are (localized name, localized description, callback)."""
     global _dialog_id
     import services
@@ -80,7 +80,7 @@ def _window(title, description, rows, localized_title=None):
         dialog.add_row(ObjectPickerRow(option_id=index, name=name,
                                          row_description=detail, row_tooltip=None,
                                          icon=None, icon_info=icon_info, tag=index,
-                                         is_selected=False))
+                                         is_selected=(index == selected_index)))
 
     def selected(reply):
         global _dialog_id
@@ -92,6 +92,8 @@ def _window(title, description, rows, localized_title=None):
         tags = list(reply.get_result_tags())
         if len(tags) != 1 or tags[0] not in callbacks:
             return
+        if refresh_on_select:
+            keys.hold_scanner_resume()
         # Defer until EA finishes dismissing this dialog. Never fall back to
         # executing on an arbitrary caller thread if the pump has stopped.
         if not pump.post(callbacks[tags[0]]):
@@ -206,7 +208,30 @@ def _queue_entries(sim):
     the client draws: running (super, group and posture) first, then queued
     in order. Each is (info, interaction or None, state)."""
     from protocolbuffers import Sims_pb2
-    infos = [info for info in sim.ui_manager.get_interactions_gen() if not info.canceled]
+    infos = []
+    seen = set()
+    for info in sim.ui_manager.get_interactions_gen():
+        if info.canceled:
+            seen.add(info.interaction_id)
+        else:
+            infos.append(info)
+    queue = getattr(sim, 'queue', None)
+    if not infos and queue is not None:
+        # EA can briefly have no queue icons for an ongoing activity. Read
+        # the native running/queued interactions without inventing actions.
+        from itertools import chain
+        from types import SimpleNamespace
+        running = chain((queue.running,), sim.si_state.sis_actor_gen())
+        for state, actions in ((Sims_pb2.IQ_RUNNING, running), (Sims_pb2.IQ_QUEUED, queue)):
+            for action in actions:
+                if (action is None or action.is_finishing or action.id in seen
+                        or not (action.visible_as_interaction or action.user_cancelable)):
+                    continue
+                seen.add(action.id)
+                visual_type, _ = action.get_interaction_queue_visual_type()
+                infos.append(SimpleNamespace(interaction_id=action.id, display_name=action.get_name(),
+                                             ui_state=state, user_cancelable=action.user_cancelable,
+                                             is_visual_type_posture=lambda t=visual_type: t == Sims_pb2.Interaction.POSTURE))
     running = [info for info in infos if info.ui_state != Sims_pb2.IQ_QUEUED]
     queued = [info for info in infos if info.ui_state == Sims_pb2.IQ_QUEUED]
     entries = []
@@ -247,18 +272,26 @@ def action_queue():
     if sim is None:
         _say('load a household first')
         return False
+    return _queue_window(sim)
+
+
+def _queue_window(sim, dismissed=frozenset(), preferred=None):
     try:
-        entries = _queue_entries(sim)
+        entries = [entry for entry in _queue_entries(sim) if entry[0].interaction_id not in dismissed]
     except Exception as ex:
         speech.log_line('hub: queue read failed: {!r}'.format(ex))
         _say('action unavailable')
         return False
     sim_id = sim.id
     rows = []
-    cancelable = [info.interaction_id for info, _i, _s in entries if info.user_cancelable]
+    cancelable = tuple(info.interaction_id for info, _i, _s in entries if info.user_cancelable)
+    def select(ids, index):
+        return lambda: _refresh_queue(sim_id, ids, index, dismissed)
+
     if len(cancelable) > 1:
-        rows.append((menu._raw(lang.t('cancel all actions')), None,
-                     lambda ids=tuple(cancelable): cancel_actions(sim_id, ids)))
+        bulk_row = (menu._raw(lang.t('cancel all actions')), None, select(cancelable, 0))
+    else:
+        bulk_row = None
     queued_total = sum(1 for _info, _i, state in entries if state == 'queued')
     position = 0
     for info, interaction, state in entries:
@@ -270,10 +303,31 @@ def action_queue():
         if name is None:
             continue
         detail = menu._raw(_queue_detail(info, interaction, state, position, queued_total))
-        rows.append((name, detail, lambda value=info.interaction_id: cancel_actions(sim_id, (value,))))
+        rows.append((name, detail, select((info.interaction_id,), len(rows))))
+    index = min(preferred, len(rows) - 1) if preferred is not None and rows else None
+    if bulk_row:
+        # A client that focuses the first row despite the native selection
+        # should land on an individual action after a cancellation.
+        rows.insert(0 if preferred is None else len(rows), bulk_row)
     if not rows:
-        rows.append((menu._raw(lang.t('queue empty')), None, open_hub))
-    return _window('action queue', 'action queue instructions', rows)
+        rows.append((menu._raw(lang.t('queue empty')), None, select((), 0)))
+    return _window('action queue', 'action queue instructions', rows,
+                   selected_index=index, refresh_on_select=True)
+
+
+def _refresh_queue(sim_id, ids, index, dismissed):
+    import services
+    sim = services.get_active_sim()
+    if sim is None or sim.id != sim_id:
+        _say('sim unavailable')
+        return False
+    if _dialog_id is not None:
+        return False
+    canceled = _cancel_queue_actions(sim, ids) if ids else set()
+    # The UI manager can retain a canceled icon until the simulation advances.
+    # Suppress only IDs for which EA accepted our cancellation in this window.
+    _queue_window(sim, dismissed.union(canceled), index)
+    return bool(canceled)
 
 
 def cancel_actions(sim_id, interaction_ids):
@@ -284,14 +338,19 @@ def cancel_actions(sim_id, interaction_ids):
     if sim is None or sim.id != sim_id:
         _say('sim unavailable')
         return False
-    canceled = refused = 0
+    return bool(_cancel_queue_actions(sim, interaction_ids))
+
+
+def _cancel_queue_actions(sim, interaction_ids):
+    canceled = set()
+    refused = 0
     for interaction_id in interaction_ids:
         interaction = _queue_interaction(sim, interaction_id)
         if interaction is None:
             continue
         if interaction.user_cancelable and interaction.cancel_user(
                 cancel_reason_msg='TS4 Access action queue'):
-            canceled += 1
+            canceled.add(interaction_id)
         else:
             refused += 1
     if canceled:
@@ -300,7 +359,7 @@ def cancel_actions(sim_id, interaction_ids):
         _say('queue cannot cancel')
     else:
         _say('action already finished')
-    return canceled > 0
+    return canceled
 
 
 # Enter on an item of the active Sim's inventory (TooltipManager

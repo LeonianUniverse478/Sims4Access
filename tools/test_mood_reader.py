@@ -1,5 +1,5 @@
-"""Control Alt E and the accessibility menu row read the whole mood panel in
-one reply. SimHub's MoodContainer posts a11y.mood_enc records: M opens a
+"""Control Alt E browses moodlets. The accessibility menu reads the whole
+panel in one reply. SimHub's MoodContainer posts a11y.mood_enc records: M opens a
 reading, B carries one moodlet with every tooltip field (description
 included), E ends it. The order is BuffDisplay.BuffSort's; an empty payload
 is spoken as unavailable; stale or partial readings never speak.
@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 from urllib.parse import quote
 
 import test_scanner_v5 as env
+import tyjokr_a11y_hub as hub
 import tyjokr_a11y_narrator as narrator
 
 keys = env.keys
@@ -47,6 +48,7 @@ class MoodReaderTests(unittest.TestCase):
         self.addCleanup(locale.stop)
 
     def test_the_chord_asks_the_client_and_modals_keep_the_key(self):
+        self.assertEqual(dict(hub.PANELS)['mood and moodlets'], 'A11yMoodSummary')
         keys._chord('mood')
         env.drain()
         self.assertEqual(env.messages, ['A11yMood'])

@@ -18,6 +18,7 @@ package olympus.core
    import flash.utils.getDefinitionByName;
    import flash.utils.getQualifiedClassName;
    import flash.utils.getTimer;
+   import flash.utils.setTimeout;
    import olympus.core.tooltip.Tooltip;
    import olympus.gui.buttons.Button;
    import olympus.interfaces.ITooltip;
@@ -133,6 +134,7 @@ package olympus.core
       protected var mA11yFocusDue:int = 0;
       protected var mA11yFocusPending:DisplayObject = null;
       protected var mA11yStatusScope:DisplayObject = null;
+      protected var mA11yExpandedMoodPanel:Boolean = false;
       protected var mA11yPhoneOwner:String = "";
       protected var mA11yPhoneUntil:int = 0;
       // TS4 Access Plus catalog bridge (merged 2026-10-08): the products of the
@@ -3542,7 +3544,7 @@ package olympus.core
             {
                this.A11yDrawFocusRing(this.mA11yFocused);
                this.mA11yLast = "";
-               if("A11yAnnounceMood" in this.mA11yFocused) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
+               if("A11yAnnounceMood" in this.mA11yFocused && (this.mA11yStatusScope == null || !("mcBuffDisplay" in this.mA11yStatusScope))) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
                else
                {
                   this.A11yAnnounceDisplay(this.mA11yFocused,"a11y.focus_enc",true);
@@ -3578,7 +3580,7 @@ package olympus.core
             {
                this.mA11yLast = "";
                this.A11yFocusHover(null,this.mA11yFocused);
-               if("A11yAnnounceMood" in this.mA11yFocused) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
+               if("A11yAnnounceMood" in this.mA11yFocused && (this.mA11yStatusScope == null || !("mcBuffDisplay" in this.mA11yStatusScope))) { Object(this.mA11yFocused)["A11yAnnounceMood"](); }
                else { this.A11yAnnounceDisplay(this.mA11yFocused,"a11y.focus_enc",true); }
             }
          }
@@ -3725,15 +3727,36 @@ package olympus.core
 
       public function A11yMood(param1:Object = null) : void
       {
-         var hub:Object = this.A11yLoadedWidget("SimHub");
+         this.A11yOpenMoodPanel(true);
+      }
+
+      public function A11yMoodSummary(param1:Object = null) : void
+      {
+         this.A11yOpenMoodPanel(false);
+      }
+
+      public function A11yOpenMoodPanel(browse:Boolean) : void
+      {
+         var hub:Object = null;
          try
          {
             if(!this.mA11yKeyboard || this.mA11yActiveModalRoot != null) { return; }
-            // The whole panel is read in one reply by SimHub's MoodContainer,
-            // the only movie defining it and the buff classes it reads; it is
-            // reached by name so no other movie resolves those classes.
+            hub = this.A11yLoadedWidget("SimHub");
+            // Focus the mood header first. SimHub owns the tooltip types and
+            // also provides the aggregate reading when the buff display is absent.
             if(this.A11yIsLive(hub as DisplayObject) && hub["mcMoodContainer"] != null)
             {
+               if(browse && hub["mcBuffDisplay"] != null)
+               {
+                  if(hub != this.mA11yStatusScope)
+                  {
+                     this.mA11yExpandedMoodPanel = !hub["mcBuffDisplay"]["mcGridView"].visible;
+                  }
+                  hub["mcBuffDisplay"]["SetExpandedViewVisibility"](true);
+                  this.mA11yStatusScope = hub as DisplayObject;
+                  this.A11yFocusInto(this.mA11yStatusScope);
+                  return;
+               }
                hub["mcMoodContainer"]["A11yReadMood"]();
                return;
             }
@@ -4211,6 +4234,12 @@ package olympus.core
          var product:Object = null;
          var index:int = 0;
          var start:int = 0;
+         var stop:int = 0;
+         var size:int = 0;
+         var desc:String = null;
+         var longs:Array = new Array();
+         var piece:int = 0;
+         var cut:int = 0;
          filter["productType"] = productType;
          if(search != "")
          {
@@ -4230,13 +4259,44 @@ package olympus.core
          {
             product = new productClass(raw[index]);
             this.mA11yPlusProducts.push(product);
-            items.push(encodeURIComponent(String(product["Name"])) + "~" + String(product["price"]) + "~" + String(product["variationCount"]));
+            // The catalog's own description (CatalogProduct.Description: the
+            // custom one, else the localized one), so players know what they
+            // buy (Leo, 2026-11-22). Never cut (Leo, 2026-11-23): a long one
+            // rides separately in catdesc pieces after its item's batch.
+            desc = "";
+            try { desc = product["Description"] == null ? "" : String(product["Description"]); } catch(e:Error) { desc = ""; }
+            if(desc == "null" || desc == "undefined") { desc = ""; }
+            longs.push(desc.length > 400 ? desc : "");
+            items.push(encodeURIComponent(String(product["Name"])) + "~" + String(product["price"]) + "~" + String(product["variationCount"]) + "~" + (desc.length > 400 ? "" : encodeURIComponent(desc)));
             index = index + 1;
          }
+         // Batches of at most 25 items and about 2,500 characters, so every
+         // message stays a short command line.
          while(start < items.length)
          {
-            this.A11yPlusReply("cat|" + serial + "|" + start + "|" + items.length + "|" + items.slice(start,start + 25).join("^"));
-            start = start + 25;
+            stop = start;
+            size = 0;
+            while(stop < items.length && stop - start < 25 && (stop == start || size + String(items[stop]).length < 2500))
+            {
+               size = size + String(items[stop]).length;
+               stop = stop + 1;
+            }
+            this.A11yPlusReply("cat|" + serial + "|" + start + "|" + items.length + "|" + items.slice(start,stop).join("^"));
+            // Long descriptions in order, 400 characters a piece, never
+            // splitting a surrogate pair; Python joins the pieces.
+            while(start < stop)
+            {
+               desc = String(longs[start]);
+               piece = 0;
+               while(piece < desc.length)
+               {
+                  cut = piece + 400;
+                  if(cut < desc.length && desc.charCodeAt(cut - 1) >= 55296 && desc.charCodeAt(cut - 1) <= 56319) { cut = cut - 1; }
+                  this.A11yPlusReply("catdesc|" + serial + "|" + start + "|" + encodeURIComponent(desc.substring(piece,cut)));
+                  piece = cut;
+               }
+               start = start + 1;
+            }
          }
          this.A11yPlusReply("catend|" + serial + "|" + items.length);
       }
@@ -4301,6 +4361,10 @@ package olympus.core
          if(_loc3_ == "loc" && _loc2_.length > 3)
          {
             this.A11yResolveLoc(String(_loc2_[2]),String(_loc2_[3]));
+         }
+         else if(_loc3_ == "objectquality" && _loc2_.length == 4)
+         {
+            this.A11yObjectQuality(String(_loc2_[2]),String(_loc2_[3]));
          }
          else if(_loc3_ == "cap")
          {
@@ -4380,6 +4444,101 @@ package olympus.core
          catch(e:Error)
          {
          }
+      }
+
+      public function A11yObjectQuality(serial:String, objectId:String, retry:Boolean = true) : void
+      {
+         if(!/^[0-9]{1,20}$/.test(serial) || !/^[1-9][0-9]{0,19}$/.test(objectId)) { return; }
+         var encoded:String = "";
+         try
+         {
+            // GetObjectMetadata takes the same 64-bit string as the object picker.
+            var raw:Object = CommunicationManager.CallGameService("GetObjectMetadata",objectId,true);
+            var style:int = raw == null ? 0 : int(raw.hover_tip);
+            if(retry && (style == 0 || (style != 6 && raw.quality == null && raw.quality_description == null)))
+            {
+               // A first hover can arrive ahead of the object's metadata update.
+               setTimeout(this.A11yObjectQuality,50,serial,objectId,false);
+               return;
+            }
+            if(style > 0 && style != 6)
+            {
+               encoded = encodeURIComponent(this.A11yObjectQualityText(raw,style));
+            }
+         }
+         catch(e:Error) { }
+         this.A11yPostToPython("a11y.objectquality_enc",serial + "|" + objectId + "|" + encoded);
+      }
+
+      public function A11yObjectQualityText(raw:Object, style:int) : String
+      {
+         // TipPanel.CheckStaticData restricts fields by the active Sim's skills.
+         // Apply those rules to the quality inputs without changing the live tip.
+         var view:Object = {"hover_tip":style};
+         var names:Array = ["quality","quality_description","evolution_progress"];
+         var field:String;
+         var i:int = 0;
+         while(i < names.length)
+         {
+            field = names[i];
+            if(raw[field] != null) { view[field] = raw[field]; }
+            i = i + 1;
+         }
+         var rulesClass:Object = getDefinitionByName("gamedata.Gameplay.shared.definitions.HoverTipStaticData");
+         var state:Object = getDefinitionByName("gamedata.Gameplay.shared.GameplayStateData");
+         var rules:Object = rulesClass.GetHoverTipStaticDataForStyle(String(style));
+         var skills:Object = state.AllSkillProgressUpdates;
+         i = 0;
+         while(rules != null && skills != null && i < rules.length)
+         {
+            var rule:Object = rules[i];
+            i = i + 1;
+            field = rule.field_name;
+            if(!view.hasOwnProperty(field)) { continue; }
+            var j:int = 0;
+            while(j < skills.length)
+            {
+               var skill:Object = skills[j];
+               j = j + 1;
+               if(rule.skill_id == skill.skill_id && rule.skill_points > skill.curr_points)
+               {
+                  if(view[field] is Array)
+                  {
+                     var values:Array = view[field].concat();
+                     values[rule.index] = null;
+                     view[field] = values;
+                  }
+                  else { delete view[field]; }
+                  break;
+               }
+            }
+         }
+         var metadataClass:Class = getDefinitionByName("olympus.objects.ObjectMetadata") as Class;
+         var metadata:Object = new metadataClass(view);
+         var tier:int = metadata.quality;
+         var label:String = "";
+         var keys:Object = getDefinitionByName("olympus.localization.KeysGP");
+         if(metadata.quality_description != null)
+         {
+            label = metadata.quality_description.toString();
+         }
+         if(style == 3)
+         {
+            // The gardening panel shows wildness in the name, with no quality row.
+            if(tier == 0 || !label) { return ""; }
+            if(metadata.evolution_progress == 1)
+            {
+               label = keys.GARDENING_QUALITY_FORMER.toString(label);
+            }
+         }
+         else if(metadata.quality_description == null && tier >= 1 && tier <= 3)
+         {
+            var tiers:Array = [keys.HOVERTIP_ONE_STAR,keys.HOVERTIP_TWO_STAR,keys.HOVERTIP_THREE_STAR];
+            label = tiers[tier - 1].toString();
+         }
+         if(!label) { return ""; }
+         var generic:Object = getDefinitionByName("olympus.localization.Keys");
+         return generic.GENERIC_SPACE.toString(keys.HOVERTIP_QUALITY.toString(),label);
       }
 
       public function A11yMsgHidePieMenu(param1:Object = null) : void
@@ -4595,6 +4754,7 @@ package olympus.core
             CommunicationManager.AddMessageListenerByName("A11yInspect",this.A11yInspect,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yClock",this.A11yClock,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yMood",this.A11yMood,"A11yNarrator");
+            CommunicationManager.AddMessageListenerByName("A11yMoodSummary",this.A11yMoodSummary,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yInvItemActions",this.A11yInvItemActions,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yBuildGridOn",this.A11yBuildGridOnMsg,"A11yNarrator");
             CommunicationManager.AddMessageListenerByName("A11yBuildGridOff",this.A11yBuildGridOffMsg,"A11yNarrator");
@@ -4954,6 +5114,11 @@ package olympus.core
             if(this.A11yReleaseBuildCatalog()) { return; }
             if(owner == this.mA11yStatusScope)
             {
+               if(owner != null && "mcBuffDisplay" in owner && this.mA11yExpandedMoodPanel)
+               {
+                  this.mA11yExpandedMoodPanel = false;
+                  owner["mcBuffDisplay"]["SetExpandedViewVisibility"](false);
+               }
                this.mA11yStatusScope = null;
                this.A11yClearFocus();
                this.mA11yScope = null;
@@ -5234,8 +5399,30 @@ package olympus.core
       }
 
 
+      public function A11yCollectMoodRows(item:DisplayObject, rows:Array, depth:int) : void
+      {
+         if(item == null || !item.visible || item.alpha <= 0.01 || depth > 40) { return; }
+         if(getQualifiedClassName(item) == "widgets.Gameplay.SimHub::BuffCellView")
+         {
+            rows.push(item);
+            return;
+         }
+         var children:DisplayObjectContainer = item as DisplayObjectContainer;
+         if(children == null) { return; }
+         for(var i:int = 0; i < children.numChildren; i = i + 1)
+         {
+            this.A11yCollectMoodRows(children.getChildAt(i),rows,depth + 1);
+         }
+      }
+
       public function A11yCollectFocusables(param1:DisplayObject, param2:Array, param3:int) : void
       {
+         if(param1 != null && param1 == this.mA11yStatusScope && "mcBuffDisplay" in param1)
+         {
+            param2.push(Object(param1)["mcMoodContainer"]);
+            this.A11yCollectMoodRows(Object(param1)["mcBuffDisplay"] as DisplayObject,param2,0);
+            return;
+         }
          var _loc4_:DisplayObjectContainer = null;
          var _loc5_:int = 0;
          var _loc6_:Rectangle = null;
@@ -6042,7 +6229,7 @@ package olympus.core
                param1.stage.focus = param1 is TextField && TextField(param1).type == "input" ? TextField(param1) : null;
             }
             this.A11yDrawFocusRing(param1);
-            if(param1 != null && "A11yAnnounceMood" in param1) { Object(param1)["A11yAnnounceMood"](); }
+            if(param1 != null && "A11yAnnounceMood" in param1 && (this.mA11yStatusScope == null || !("mcBuffDisplay" in this.mA11yStatusScope))) { Object(param1)["A11yAnnounceMood"](); }
             else { this.A11yAnnounceDisplay(param1,"a11y.widget_enc",false); }
             // Settled re-reading corrects fast list scrolling. Informational
             // icons retain their existing hover narration without a second
@@ -8675,6 +8862,15 @@ package olympus.core
                if(_loc7_.length > 0)
                {
                   _loc2_.push("999999|999999|" + _loc7_);
+               }
+            }
+            if(this.mA11yStatusScope != null && "mcBuffDisplay" in this.mA11yStatusScope &&
+               (param6 == "a11y.widget_enc" || param6 == "a11y.focus_enc"))
+            {
+               var moodText:String = Object(this.mA11yStatusScope)["mcMoodContainer"]["A11yMoodRowText"](param1);
+               if(moodText.length > 0)
+               {
+                  _loc2_ = ["0|0|" + moodText];
                }
             }
             if((param6 == "a11y.widget_enc" || param6 == "a11y.focus_enc") && _loc2_.length == 1)

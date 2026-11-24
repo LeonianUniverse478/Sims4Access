@@ -1,6 +1,9 @@
 package widgets.Gameplay.SimHub.controls
 {
    import flash.display.MovieClip;
+   import flash.display.DisplayObject;
+   import olympus.extensions.TooltipExtension;
+   import widgets.Gameplay.SimHub.BuffCellView;
    import flash.events.Event;
    import flash.events.MouseEvent;
    import flash.text.TextField;
@@ -380,10 +383,39 @@ package widgets.Gameplay.SimHub.controls
 
       private static var sA11yMoodSeq:int = 0;
 
-      // Control Alt E: the whole mood panel in one reading. SimHub is the
-      // only movie defining this class and every EA class named below, so
-      // they resolve here; TooltipManager reaches this by name only. Records
-      // are separate a11y.mood_enc posts (see narrator.a11y_mood_enc).
+      // Read one item from the expanded display using the same native fields
+      // and time formatting as the summary from the accessibility menu.
+      public function A11yMoodRowText(item:DisplayObject) : String
+      {
+         var parts:Array = [];
+         var fields:Array = null;
+         var cell:BuffCellView = item as BuffCellView;
+         var ext:TooltipExtension = null;
+         var i:int = 0;
+         try
+         {
+            if(item == this && this.mCurrentMoodData != null && this.mCurrentMood != null)
+            {
+               fields = [this.A11yPlain(this.mCurrentMoodData.GetMoodName(this.mCurrentMood.mood_intensity)),this.A11yPlain(this.mA11yMoodDescription)];
+            }
+            else if(cell != null && cell.mcTooltipHolder != null)
+            {
+               ext = cell.mcTooltipHolder.GetExtension(TooltipExtension) as TooltipExtension;
+               if(ext == null || ext.Data == null) { return ""; }
+               fields = this.A11yBuffRecord("",0,ext.Data.info as BuffInfo);
+               if(fields == null) { return ""; }
+               i = 6; // Skip the record header; the remaining fields describe this moodlet.
+            }
+            while(fields != null && i < fields.length)
+            {
+               if(fields[i] != null && fields[i].length > 0) { parts.push(fields[i]); }
+               i = i + 1;
+            }
+         }
+         catch(e:Error) { }
+         return parts.join(". ");
+      }
+
       public function A11yReadMood() : void
       {
          var infos:Vector.<BuffInfo> = null;

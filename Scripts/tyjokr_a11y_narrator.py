@@ -376,8 +376,8 @@ def _clock_funds():
         return ''
 
 
-# Control Alt E and the accessibility menu row read the mood panel in one
-# pass. SimHub's MoodContainer posts one record per a11y.mood_enc so no
+# The accessibility menu and the shortcut fallback read the mood panel in
+# one pass. SimHub's MoodContainer posts one record per a11y.mood_enc so no
 # single command carries every moodlet: M opens a reading (sequence, count,
 # current mood key, mood name, mood description), B carries a moodlet
 # (sequence, index, mood key, boost flag, weight, name, effect, boost,
