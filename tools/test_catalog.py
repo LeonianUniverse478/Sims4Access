@@ -60,8 +60,14 @@ class Ui(object):
         """The bridge answering the last browse request, in 25-item pages."""
         serial = self.sent[-1].split('|')[6]
         for start in range(0, len(items), 25):
-            page = '^'.join(quote(n) + '~%d~%d' % (p, c) for (n, p, c) in items[start:start + 25])
+            page = '^'.join(quote(i[0]) + '~%d~%d' % (i[1], i[2]) + ('~' + quote(i[3]) if len(i) > 3 and len(i[3]) <= 400 else '')
+                            for i in items[start:start + 25])
             build._flash_reply(quote('cat|%s|%d|%d|%s' % (serial, start, len(items), page)))
+            # Long descriptions follow in 400-character pieces, as the bridge sends them.
+            for (n, i) in enumerate(items[start:start + 25], start):
+                if len(i) > 3 and len(i[3]) > 400:
+                    for at in range(0, len(i[3]), 400):
+                        build._flash_reply(quote('catdesc|%s|%d|%s' % (serial, n, quote(i[3][at:at + 400], safe=''))))
         build._flash_reply(quote('catend|%s|%d' % (serial, len(items))))
 
 
@@ -115,6 +121,37 @@ class CatalogTests(unittest.TestCase):
         build._flash_reply(quote('selected|2|' + quote('Fridge 2')))
         self.assertTrue(ui.said[-1].startswith('Chosen: Fridge 2. Press Ctrl+Alt+B'))
         self.assertTrue(all(p['tag'] == 'catalogtree' for p in ui.pickers))
+
+    def test_items_read_the_catalog_description(self):
+        """Leo, 2026-11-22: say what an item is before buying it."""
+        ui = Ui(self)
+        catalog.search('bed')
+        ui.reply([('Double Bed', 900, 3, 'Sleep like a log. <font color="#fff">Comfort</font> {0.SimFirstName} approves.'),
+                  ('Cot', 100, 1, ''), ('Futon', 250, 2)])
+        rows = ui.last['rows']
+        self.assertEqual(rows[0][:2], ('Double Bed', '900 simoleons, 3 colours. Sleep like a log. Comfort approves.'),
+                         'markup and tokens are dropped')
+        self.assertEqual(rows[1][1], '100 simoleons', 'no description, nothing added')
+        self.assertEqual(rows[2][1], '250 simoleons, 2 colours')
+        self.assertEqual(build._cat['items'][0], ('Double Bed', 900, 3), 'the item list keeps its shape for the build helper')
+        ui.pick('Cot')
+        self.assertEqual(ui.sent[-1], 'A11y|plus|select|1')
+        catalog.search('lamp')
+        ui.reply([('Lamp', 50, 1)])
+        self.assertEqual(ui.last['rows'][0][1], '50 simoleons', 'an earlier list leaves no description behind')
+
+    def test_long_descriptions_arrive_whole(self):
+        """Leo, 2026-11-23: never cut a description; long ones come in pieces."""
+        ui = Ui(self)
+        catalog.search('sofa')
+        long_text = 'A sofa | with a pipe. ' + 'Very comfy. ' * 200 + 'The end.'
+        ui.reply([('Sofa', 700, 4, long_text), ('Stool', 40, 1, 'Short.')])
+        rows = ui.last['rows']
+        self.assertEqual(rows[0][1], '700 simoleons, 4 colours. ' + long_text.strip())
+        self.assertTrue(rows[0][1].endswith('The end.'), 'nothing is cut')
+        self.assertEqual(rows[1][1], '40 simoleons. Short.')
+        build._flash_reply(quote('catdesc|999|0|' + quote('stale', safe='')))
+        self.assertNotIn('stale', build._cat['desc'].get(0, ''), 'a piece for an old list is ignored')
 
     def test_escape_goes_back_one_level(self):
         ui = Ui(self)

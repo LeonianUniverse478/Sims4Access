@@ -385,6 +385,8 @@ def apply_scanner_setting(announce_change=False):
     if not _scanner_effective():
         _scanner_suspended = False
         _scanner_pending_announce = False
+        if announce_change or _scanner_live:
+            _scanner_call('discard_pending_quality')
         if _scanner_live:
             _scanner_live = False
             _scanner_call('set_camera_live', False)   # release at once, before Flash reports
@@ -525,6 +527,7 @@ def a11y_scannerowner(state: str = '0', _connection=None):
         return True
     if not owner:
         if changed:
+            _scanner_call('discard_pending_quality')
             _scanner_suspended = not _scanner_pending_announce
         return True
     if not changed and not _scanner_pending_announce and not _scanner_suspended:
@@ -625,6 +628,12 @@ def _deliver_activation(message_name, epoch):
 def _send(message_name):
     # Speech-control actions are handled in Python; only focus navigation
     # goes to the Flash layer.
+    import tyjokr_a11y_store as store
+    if message_name in ('A11yStoreHousehold', 'A11yStoreSim'):
+        store.enqueue('sim' if message_name == 'A11yStoreSim' else 'household')
+        return
+    if message_name != 'A11y|lease' and not message_name.startswith('A11y|keyup|'):
+        store.cancel()
     if message_name == 'A11yRepeat':
         try:
             speech.repeat_last()
@@ -1277,6 +1286,8 @@ def _plain_message(vk, ctrl=False, alt=False, shift=False):
     """One policy for native context, editing and optional numpad navigation."""
     if not _enabled:
         return None
+    if vk == 0x08 and not alt and ctrl != shift and _scanner_live and _scanner_routing() and not blocking_active():
+        return 'A11yStoreSim' if ctrl else 'A11yStoreHousehold'
     if vk == 0x4E and ctrl and shift and not alt and not _modal_active and not _editing_active:
         return 'A11yNeeds'
     if ctrl or alt:

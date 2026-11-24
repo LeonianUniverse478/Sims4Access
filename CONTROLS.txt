@@ -36,6 +36,9 @@ Extra scanner shortcuts:
 Ctrl+Alt+Space: Turn Scanner mode on or off.
 Ctrl+Alt+S: Refresh the scanner.
 Ctrl+Alt+W: Read your location.
+Ctrl+Backspace: Store the selected object in the active Sim's inventory.
+Shift+Backspace: Store the selected object in household inventory on the home lot.
+For either inventory, repeat the same shortcut within 15 seconds to confirm.
 
 MENUS AND DIALOGS
 
@@ -164,8 +167,9 @@ category reads its milestones.
 Ctrl+Alt+K: Character values of the active Sim (Parenthood).
 Ctrl+Alt+C: Read the current day and time, including when the game is paused,
 then your household funds.
-Ctrl+Alt+E: Read the mood and its description, then every moodlet with
-its effect, time left, reason and description, all at once.
+Ctrl+Alt+E: Open the mood panel. Use Up and Down to hear individual moodlets,
+including their effects, causes and remaining time. Escape leaves the panel.
+For a continuous reading, choose Mood and moodlets in the accessibility menu.
 Ctrl+Alt+G: Read wants and fears.
 In Live mode with the scanner in control, Q cancels the active Sim's
 current action. Shift+Q cancels all cancelable running and queued actions.
@@ -260,8 +264,9 @@ so you never Tab around the catalog panels:
 - By room lists the rooms (Kitchen, Bathroom, Bedroom and the rest), then
   what goes in each (for example Refrigerators, Counters, Sinks). By
   function lists kinds of object (Comfort, Surfaces, Lighting and so on).
-- A kind of item lists every item with its price and how many colours it
-  comes in.
+- A kind of item lists every item with its price, how many colours it
+  comes in, and the catalog's own description of it, so you know what it is
+  before you buy. Search results include descriptions too.
 Arrows move, Enter opens or chooses, Escape goes back one level.
 Enter on an item picks it up, as clicking it in the catalog does. Then
 press Ctrl+Alt+B and place it with the Build cursor as usual.

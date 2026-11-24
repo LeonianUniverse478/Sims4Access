@@ -26,12 +26,22 @@ _TRANSLATIONS = {
     'choose an area to buy and place': {
         'en': 'Choose an area to buy and place the object if it fits.',
         'pl': 'Wybierz obszar. Jeśli obiekt się zmieści, zostanie kupiony i umieszczony.'},
+    'shortcut store': {'en': 'Scanner: Shift+Backspace stores an object in household inventory; Ctrl+Backspace stores it in Sim inventory.'},
+    'store home only': {'en': 'Household inventory requires the home lot.'},
+    'store protected': {'en': 'This object cannot be moved safely.'},
+    'store unavailable': {'en': 'The inventory cannot accept this object.'},
+    'store select object': {'en': 'Select an available object in the scanner.'},
+    'store confirm household': {'en': 'Press Shift+Backspace again to move to household inventory.'},
+    'store confirm sim': {'en': 'Press Ctrl+Backspace again to move to the inventory of {}.'},
+    'store moved': {'en': 'Moved to inventory.'},
+    'store unverified': {'en': 'Transfer could not be confirmed. Check the inventory.'},
     'scanner category': {'en': 'Category', 'pl': 'Kategoria'},
     'scanner subcategory': {'en': 'Subcategory', 'pl': 'Podkategoria'},
     'scanner dirty': {'en': 'dirty', 'pl': 'brudny'},
     'scanner dusty': {'en': 'dusty', 'pl': 'zakurzony'},
     'phone': {'en': 'Phone', 'pl': 'Telefon'},
     # --- settings menu (tyjokr_a11y_menu) ---
+    'incoming caller': {'en': 'Calling: {}'},
     'on': {
         'en': 'on',
         'de': 'an',
@@ -1156,6 +1166,10 @@ _TRANSLATIONS.update({
     'shortcut context': {'en': 'These are the mod shortcuts. Open panels and dialogs take priority over world navigation. '
                         'In text fields, ordinary keys edit text. Household Sim shortcuts require no open panel or text field. '
                         'World scanner shortcuts require the scanner setting. Grid and Build cursor modes change the arrow and action keys as described below'},
+})
+
+_TRANSLATIONS.update({
+    'servings count': {'en': 'servings: {}'},
 })
 
 _locale_lang = None
