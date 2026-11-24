@@ -32,6 +32,7 @@ _TRANSLATIONS = {
     'scanner dusty': {'en': 'dusty', 'pl': 'zakurzony'},
     'phone': {'en': 'Phone', 'pl': 'Telefon'},
     # --- settings menu (tyjokr_a11y_menu) ---
+    'incoming caller': {'en': 'Calling: {}'},
     'on': {
         'en': 'on',
         'de': 'an',

@@ -24,6 +24,53 @@ import tyjokr_a11y_native as native    # noqa: E402
 import tyjokr_a11y_hub as hub          # noqa: E402
 
 
+class CallerNameTests(unittest.TestCase):
+    def test_forwarding_and_localized_caller(self):
+        from copy import deepcopy
+        from unittest.mock import Mock
+
+        class Text:
+            def __init__(self, value):
+                self.value = value
+
+            def CopyFrom(self, other):
+                self.value = other.value
+
+        class Ring:
+            def __init__(self):
+                self.caller_id = 2
+                self.dialog = types.SimpleNamespace(text=Text('Invitation'))
+
+            def CopyFrom(self, other):
+                self.__dict__.update(deepcopy(vars(other)))
+
+        class Distributor:
+            def add_event(self, kind, message):
+                return message
+
+        loc = types.SimpleNamespace(get_raw_text=Text, get_new_line_separated_strings=lambda a, b: Text(a.value + '\n' + b.value))
+        manager = Mock()
+        modules = {'distributor.system': types.SimpleNamespace(Distributor=Distributor),
+                   'protocolbuffers': types.SimpleNamespace(Consts_pb2=types.SimpleNamespace(MSG_UI_PHONE_RING=5)),
+                   'sims4.localization': types.SimpleNamespace(LocalizationHelperTuning=loc),
+                   'services': types.SimpleNamespace(sim_info_manager=lambda: manager)}
+        with patch.dict(sys.modules, modules), patch.object(phone.lang, '_locale_lang', 'en'), \
+                patch.object(phone.settings, 'get', return_value=True):
+            phone._install_caller_name()
+            phone._install_caller_name()
+            manager.get.return_value = types.SimpleNamespace(first_name='Laura', last_name='')
+            original = Ring()
+            result = Distributor().add_event(5, original)
+            self.assertEqual(result.dialog.text.value, 'Calling: Laura\nInvitation')
+            self.assertEqual(original.dialog.text.value, 'Invitation')
+            self.assertIs(Distributor().add_event(4, original), original)
+            manager.get.return_value = None
+            self.assertIs(Distributor().add_event(5, original), original)
+            with patch.object(phone.settings, 'get', return_value=False):
+                self.assertIs(Distributor().add_event(5, original), original)
+            self.assertEqual(manager.get.call_count, 2)
+
+
 class Category(object):
     def __init__(self, name, parent=None, priority=0):
         self.name, self._parent, self._display_priority = name, parent, priority
