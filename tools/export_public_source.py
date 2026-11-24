@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / 'tools'))
 from source_exchange import allowed  # noqa: E402
 
 EXTRA_DIRS = ['reference', 'prism']
-EXTRA_FILES = ['flash/uicheats-base/SOURCE.txt', 'flash/work-1.128.90/SOURCE.txt', 'release-assets/INSTALL FIRST.txt']
+EXTRA_FILES = ['flash/uicheats-base/SOURCE.txt', 'flash/work-1.129.39/SOURCE.txt', 'release-assets/INSTALL FIRST.txt']
 # The repository's own files on the dev branch, written by hand, not exported.
 KEEP = {'.git', '.gitattributes', 'README.md', 'CONTRIBUTING.md', 'CONTRIBUTORS.md', 'LICENSE', '.github'}
 TEXT = {'.py', '.md', '.txt', '.json', '.ps1', '.as', '.js', '.java', '.cs', '.tsv', '.cfg', '.ini'}

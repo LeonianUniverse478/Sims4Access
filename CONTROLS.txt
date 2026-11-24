@@ -3,11 +3,17 @@ TS4 ACCESS CONTROLS
 Each line gives a shortcut and its action. Start with Scanner and Menus.
 Build controls are on by default; you can turn them off in settings.
 
+Accessibility menu > Away actions: choose a household Sim away from this
+lot, then use their native portrait menu to choose what they focus on.
+The game supplies the available actions. Escape closes without choosing.
+
 SCANNER
 
 Turn Scanner mode on in settings or press Ctrl+Alt+Space.
 Keyboard navigation and the scanner feature must also be enabled.
 Wait for "Scanner". Use these keys without holding Ctrl or Alt:
+
+Objects announce dirty or dusty when their current native state reports it.
 
 Up: Previous item in the current list.
 Down: Next item in the current list.
@@ -19,6 +25,9 @@ Escape: Normal game/menu behavior; it does not turn Scanner mode off.
 
 Hold Up or Down to repeat. Right does not repeatedly enter groups.
 Your place is remembered when you return to a group.
+The scanner starts with Yourself, Sims and Objects. Browse by object
+type inside Objects. Ctrl+Alt+H opens grouped Live mode actions and
+readouts. Now contains the action queue and day and time.
 In Live mode, the camera follows the active Sim and arrows do not pan it.
 At the hospital (Get to Work doctor career), patients are named with their
 visit stage, for example: Mateo Lewis, patient, waiting.
@@ -49,7 +58,9 @@ Ctrl+Alt+R: Read the current control or stop speech.
 
 In text fields, arrows edit text. Tab or Shift+Tab leaves the field.
 In purchase lists, Left and Right change quantity. Enter on an item
-focuses Done; another Enter confirms. Tab also reaches Done.
+focuses Done when the cart can be confirmed; another Enter confirms.
+If Done is unavailable, Enter keeps the item focused and reads the reason
+and quantity controls. Tab also reaches Done.
 In cooking and drink recipe lists, Enter chooses the focused recipe.
 If it opens serving sizes, press Down to a size, then Enter to cook.
 In Sim pickers, Space or Enter selects; Tab reaches confirmation.
@@ -138,6 +149,11 @@ closing menus. Day and time can be read while a menu is open. The phone
 shortcut works from the call alert or HUD panels; close dialogs and pickers first.
 
 Ctrl+Alt+H: Open the accessibility menu.
+In Build mode, choose Guided placement after selecting a catalog object
+and leaving the catalog controls. Choose the floor, then a named room
+or lot area. Accepting the area buys and places the object if it fits.
+Use Undo last accessible placement in the same menu to refund it.
+Guided placement is also in the Alt+B Build Helper.
 Choose Keyboard shortcuts in that menu to hear the controls.
 Ctrl+Shift+N: Read needs.
 Ctrl+Alt+L: Turn diagnostic logging on or off (TS4_Access.log next to the mod).
@@ -167,6 +183,11 @@ categories; Enter on one reads each milestone, whether and at what age it
 was reached, and the game's text or hint. With Parenthood installed,
 Character values (also Ctrl+Alt+K) reads each value on its scale, the trait it leads to at
 age up, and its description.
+
+With Seasons installed, a notification announces each holiday when its
+day starts (and when you load a save on one): its name, each tradition with
+what to do for it, and whether work or school is off. Custom and modded
+holidays are included.
 
 TS4 ACCESS PLUS (ALT KEYS)
 
@@ -237,12 +258,13 @@ so you never Tab around the catalog panels:
 - By room lists the rooms (Kitchen, Bathroom, Bedroom and the rest), then
   what goes in each (for example Refrigerators, Counters, Sinks). By
   function lists kinds of object (Comfort, Surfaces, Lighting and so on).
-- A kind of item lists every item with its price and how many colours it
-  comes in.
+- A kind of item lists every item with its price, how many colours it
+  comes in, and the catalog's own description of it, so you know what it is
+  before you buy. Search results include descriptions too.
 Arrows move, Enter opens or chooses, Escape goes back one level.
 Enter on an item picks it up, as clicking it in the catalog does. Then
 press Ctrl+Alt+B and place it with the Build cursor as usual.
-Ctrl+Alt+D goes straight to search: type a word, such as bed, fridge or
+Ctrl+Alt+I goes straight to search: type a word, such as bed, fridge or
 lamp, press Enter, and choose from what matches.
 
 BUILD: PLACING OBJECTS
@@ -306,6 +328,40 @@ When objects share a tile, selling targets a slotted object before the
 surface beneath it. Sale and undo refuse an object that contains another
 object or is being used; remove its contents or finish the interaction first.
 
+BUILD CURSOR AND SCANNER EXTRAS (BY DARAINBOWGIRLXX)
+
+Scanner range: Ctrl+Alt+comma and Ctrl+Alt+period step through 6, 12, 24 and 40
+metres, the whole lot, this floor and this room. Metre ranges always keep
+every Sim; lot, floor and room ranges limit Sims and objects alike. The
+range is remembered (Settings: scanner range).
+
+With the Build cursor on (Ctrl+Alt+B):
+- M picks up the object on this tile to move it. Go to the new tile and
+  press M again. Escape cancels the move (a second Escape leaves the
+  cursor); if the move fails, it stays where it was.
+- Tiles say walls explicitly: "Wall north" between two rooms, "Wall or
+  fence" where the edge is outdoors on both sides.
+- Ctrl+Alt+U and Ctrl+Alt+D raise and lower the target layer: ground, six
+  wall heights from very low to near the top, and ceiling. For an object
+  that hangs on a wall, that is its height; R and Shift+R choose which
+  wall it goes on. Choose it with Ctrl+Alt+O, then press Enter: the
+  game's own Build tool hangs it (the camera turns to that wall and the
+  mouse clicks there; walls are raised for it and put back after), and
+  you hear what it cost. If the game says it must be completely
+  supported by wall, move along the wall away from corners, doors and
+  windows: wider pictures need more wall.
+- 1 focuses an object on the target layer (press again for the next one);
+  M and Delete then act on it. 4 says each nearby object's layer.
+- Ctrl+Alt+J labels the room at the cursor (bedroom, kitchen and others).
+  Entering a labelled room says its name, and once a room is labelled,
+  walls and doors say which room is on each side. Labels are saved per
+  save and lot. a11y.roomlabel followed by a name sets a custom label.
+- Experimental placement for objects that go on bare ground, in water, on
+  a ceiling or on a fence. The game checks every spot before anything is
+  bought. Each can be turned off in settings.
+- With Layer focus off in settings, Ctrl+Alt+U and D only set the height
+  of a chosen wall object.
+
 LOT GRID IN LIVE MODE
 
 Enable Build controls and turn Scanner mode off before using the grid in
@@ -322,3 +378,51 @@ Backspace: Exit the grid.
 
 In Live mode the grid only reads the lot. It does not place objects.
 
+EXPERIMENTAL BASEMENTS
+
+Alt+B, Basement assistant (experimental): build a rectangular basement room
+or inspect native floor bounds and existing basement rooms without building.
+Choose the size and position, then confirm before any construction.
+Stacked-house plans with a basement use this adapter automatically.
+Accessibility settings: experimental basement creation turns it on or off.
+Each basement room is drawn from ground level with the native Basement Tool;
+its floor, complete rectangular footprint and unchanged existing rooms must
+be verified before the helper continues to the next room, doors or stairs.
+
+UNIFIED HOUSE BUILDER
+
+Alt+B, Build my house: start with an original ready-made layout, design a
+square or rectangle, or choose the original room list. All routes use one
+review screen. Choose Stories and basement to repeat aligned floor layouts.
+Choose Rooms, positions and custom names to edit one room at a time.
+Descriptions give the actual compass position and street-facing/rear role.
+Construction starts only after selecting Build this house in the review.
+The separate Configurable stacked house row is replaced by this flow.
+
+
+Requested screen additions:
+Accessibility menu > Events > selected running event > Current event goals.
+Accessibility menu > Panels > Photography controls (open the camera first).
+Social Bunny: arrow/Tab through each readable card and its native action buttons.
+Book title dialogs: use Tab or Shift+Tab to leave the text field, then navigate to the native confirmation footer.
+
+UPSTREAM UPDATE AND SELECTION FIXES
+
+Scanner range: Ctrl+Alt+comma / Ctrl+Alt+period.
+Build cursor layer: Ctrl+Alt+U / Ctrl+Alt+D. Room labels: Ctrl+Alt+J.
+Catalog search: Ctrl+Alt+I. M remains the furniture move key in the Build cursor.
+Scenarios: navigate to the readable card and its separate native Play button.
+Apartment map: navigate to a unit marker and press Enter; the normal selection
+and move-in flow remains in control. Rental properties: expand the region
+and navigate through the building to its individual unit controls.
+
+NATIVE CHAIR SNAPPING (EXPERIMENTAL)
+
+Choose a dining chair or desk chair in the catalog. Move the Build cursor
+onto or beside its table/desk and face it. Enter snaps to the nearest free
+compatible native chair seat. The game supplies the exact position and rotation.
+Alternatively, select the ground target layer and press 1 until the intended
+table/desk is Focused, then press Enter. The preview says when a snap seat
+is available. A full or invalid seat refuses purchase.
+Accessibility settings > experimental chair snapping turns this off separately
+from chair-to-table orientation hints. No new shortcut is required.

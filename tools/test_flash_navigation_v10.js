@@ -61,6 +61,7 @@ function method(source, name) {
   const types = /:\s*(?:DisplayObjectContainer|DisplayObject|TextField|MovieClip|MouseEvent|KeyboardEvent|Event|Boolean|Number|String|Object|Array|Rectangle|Sprite|Point|int|Error)\b/g;
   const parameters = match[1].replace(types, '');
   const body = source.slice(start, cursor - 1).replace(types, '')
+    .replace(/Object\(card\)\[fields\[index\]\]\s+as\s+DisplayObject/g,'asCast(Object(card)[fields[index]],DisplayObject)')
     .replace(/((?:Object\([\w.]+\)|[\w.]+)(?:\[[\w."]+\])*)\s+as\s+(DisplayObjectContainer|DisplayObject|TextField)/g, 'asCast($1,$2)')
     .replace(/\s+as\s+Rectangle\b/g, '')
     .replace(/\bis\s+(TextField|MovieClip|DisplayObjectContainer)\b/g, 'instanceof $1');
@@ -82,6 +83,7 @@ function manager() {
     A11yMoveInQuote: () => {}, // Move-in context has its own source-executing suite.
     A11yTransferQuote: () => {}, // Transfer labels have their own suite (test_transfer_labels.js).
     A11yMoveLabel: () => {}, // Move furnishing labels: test_transfer_labels.js.
+    A11yGraphicsRowLabel: () => {}, // Graphics labels execute in test_options_simplified.js.
     A11yCalendarHeader: () => false,
     A11yCalendarLabel: () => '',
     A11yCompleted: () => false,
@@ -93,7 +95,7 @@ function manager() {
     'A11yCalendarAddOwner', 'A11ySemanticTarget', 'A11yTextDecoration', 'A11yHiddenHireControl',
     'A11yKeyboardDecoration', 'A11yInformational', 'A11yCompositeRow', 'A11yActionProxy',
     'A11yCollectFocusables', 'A11yCollectText', 'A11yMapLabel', 'A11yWizardNavLabel', 'A11yChoiceDescription', 'A11yAnnounceDisplay',
-    'A11yOptionsRowLabel']) {
+    'A11yOptionsRowLabel', 'A11yPlexInfo', 'A11yPlexActivate', 'A11yScenarioText']) {
     value[name] = method(tooltip, name);
   }
   return value;
@@ -425,5 +427,80 @@ test('Probe deactivation and deadline both unregister without persistent observa
   ui.A11yKeyProbeTick({type: 'enterFrame'});
   assert.equal(actions.length, 0);
   assert.equal(ui.A11yKeyProbeValid(), false);
+});
+test('Transfer neighborhood wrappers expose expand and visible destination households', () => {
+  const ui = manager(), row = new MovieClip('world', 'widgets.TransferPanel.controls::TransferNhdItemCellView');
+  row.focusable = true;
+  const expand = row.add(new MovieClip('btnNeighborhood')); expand.focusable = true;
+  const grid = row.add(new MovieClip('mcSelectionGrid'));
+  const household = grid.add(new MovieClip('household')); household.focusable = true;
+  grid.visible = false;
+  const closed = []; ui.A11yCollectFocusables(row, closed, 0);
+  assert.deepStrictEqual(closed, [expand]);
+  grid.visible = true;
+  const open = []; ui.A11yCollectFocusables(row, open, 0);
+  assert.deepStrictEqual(open, [expand, household]);
+});
+test('Occult ability rank wrappers expose individual native choices without activating them', () => {
+  for (const kind of [
+    'widgets.Gameplay.PerksPanel.controls::PerkRowCellView',
+    'widgets.Gameplay.PerksPanel.controls::FairyPerkRowCellView'
+  ]) {
+    const ui = manager(), row = new MovieClip('rank', kind); row.focusable = true;
+    const grid = row.add(new MovieClip('mcPrimaryGrid'));
+    const first = grid.add(new MovieClip('power1')); first.focusable = true;
+    const second = grid.add(new MovieClip('power2')); second.focusable = true;
+    first.activate = second.activate = () => { throw Error('Traversal must not purchase'); };
+    const targets = []; ui.A11yCollectFocusables(row, targets, 0);
+    assert.deepStrictEqual(targets, [first, second]);
+    second.visible = false;
+    const visible = []; ui.A11yCollectFocusables(row, visible, 0);
+    assert.deepStrictEqual(visible, [first]);
+  }
+});
+test('Linked controller highlights are decorative; real profile rows remain reachable', () => {
+  const ui=manager(), row=new MovieClip('trait', 'SimProfile::TraitCellView'); row.focusable=true;
+  const highlight=row.add(new MovieClip('mcControllerHighlight')); highlight.focusable=true;
+  row.mcControllerHighlight=highlight;
+  assert.strictEqual(ui.A11yKeyboardDecoration(highlight),true);
+  const targets=[]; ui.A11yCollectFocusables(row,targets,0);
+  assert.deepStrictEqual(targets,[row]);
+  const unrelated=new MovieClip('mcControllerHighlight'); unrelated.focusable=true;
+  new MovieClip('other').add(unrelated);
+  assert.strictEqual(ui.A11yKeyboardDecoration(unrelated),false);
+});
+
+test('Empty occult trait slots are skipped using the native IsEmpty getter', () => {
+  for (const kind of ['SimInfoMotivePanel::MotivePanelTemperamentCellView', 'SimInfoMotivePanel::MotivePanelCurseCellView']) {
+    const ui = manager(), occupied = new MovieClip('occupied', kind), empty = new MovieClip('empty', kind);
+    occupied.IsEmpty = false; empty.IsEmpty = true;
+    occupied.focusable = empty.focusable = true;
+    const parent = new MovieClip('traits'); parent.add(empty); parent.add(occupied);
+    const targets = []; ui.A11yCollectFocusables(parent, targets, 0);
+    assert.deepStrictEqual(targets, [occupied]);
+  }
+  const unrelated = new MovieClip('other', 'unrelated::CellView'); unrelated.IsEmpty = true;
+  assert.strictEqual(manager().A11yKeyboardDecoration(unrelated), false);
+});
+
+test('Occult rank rows expose localized points and retain their native powers button', () => {
+  for (const kind of [
+    'widgets.Gameplay.SimInfoHUD.MotivePanel::MotivePanelRankedStatContent',
+    'widgets.Gameplay.SimInfoHUD.SummaryPanel::SummaryPanelRankedStatContent'
+  ]) {
+    const ui = manager(), row = new MovieClip('rank', kind);
+    row.add(new TextField('txtTalentPointsTitle', 'Talent points'));
+    row.add(new TextField('txtTalentPoints', '3'));
+    const button = row.add(new MovieClip('btnPowersPanel')); button.focusable = true;
+    const targets = []; ui.A11yCollectFocusables(row, targets, 0);
+    assert.deepStrictEqual(targets, [row, button]);
+    const lines = []; ui.A11yCollectText(row, lines, 0, true);
+    assert(lines.some(line => line.endsWith('|Talent points')));
+    assert(lines.some(line => line.endsWith('|3')));
+    row.visible = false;
+    const hidden = []; ui.A11yCollectFocusables(row, hidden, 0);
+    assert.deepStrictEqual(hidden, []);
+  }
+  assert.strictEqual(manager().A11yInformational(new MovieClip('rank', 'unrelated::RankedStatContent')), false);
 });
 console.log(passed + ' Flash navigation fixture checks passed (not in-game verification).');

@@ -10,8 +10,26 @@ Translations are first-pass; refine per-language as feedback arrives.
 """
 
 _TRANSLATIONS = {
+    'yourself': {'en': 'Yourself', 'pl': 'Twój Sim'},
+    'Sims': {'en': 'Sims', 'pl': 'Simowie'},
+    'nearby objects': {'en': 'Objects', 'pl': 'Obiekty'},
+    'places': {'en': 'Places', 'pl': 'Miejsca'},
+    'home and lot': {'en': 'Home and lot', 'pl': 'Dom i parcela'},
+    'wishes and aspirations': {'en': 'Wants, fears and aspirations', 'pl': 'Pragnienia, obawy i aspiracje'},
+    'now': {'en': 'Now', 'pl': 'Teraz'},
+    'back to accessibility menu': {'en': 'Back to Accessibility menu', 'pl': 'Wróć do menu dostępności'},
+    'enable the scanner first': {'en': 'Enable the scanner first.', 'pl': 'Najpierw włącz skaner.'},
+    'guided placement': {'en': 'Guided placement', 'pl': 'Umieszczanie wspomagane'},
+    'undo last accessible placement': {
+        'en': 'Undo last accessible placement', 'pl': 'Cofnij ostatnie dostępne umieszczenie'},
+    'choose a floor to search': {'en': 'Choose a floor to search.', 'pl': 'Wybierz piętro do przeszukania.'},
+    'choose an area to buy and place': {
+        'en': 'Choose an area to buy and place the object if it fits.',
+        'pl': 'Wybierz obszar. Jeśli obiekt się zmieści, zostanie kupiony i umieszczony.'},
     'scanner category': {'en': 'Category', 'pl': 'Kategoria'},
     'scanner subcategory': {'en': 'Subcategory', 'pl': 'Podkategoria'},
+    'scanner dirty': {'en': 'dirty', 'pl': 'brudny'},
+    'scanner dusty': {'en': 'dusty', 'pl': 'zakurzony'},
     'phone': {'en': 'Phone', 'pl': 'Telefon'},
     # --- settings menu (tyjokr_a11y_menu) ---
     'on': {
@@ -129,23 +147,23 @@ _TRANSLATIONS = {
         'cs': 'Nastavení znovu načteno',
     },
     'screen reader installed': {
-        'en': 'TS4 Access is installed. This menu opens with Control Alt U.',
-        'de': 'TS4 Access ist installiert. Dieses Menü öffnet sich mit Strg Alt U.',
-        'fr': "TS4 Access est installé. Ce menu s'ouvre avec Contrôle Alt U.",
-        'es': 'TS4 Access está instalado. Este menú se abre con Control Alt U.',
-        'it': 'TS4 Access è installato. Questo menu si apre con Control Alt U.',
-        'pt': 'TS4 Access está instalado. Este menu abre com Control Alt U.',
-        'nl': 'TS4 Access is geïnstalleerd. Dit menu opent met Control Alt U.',
-        'pl': 'TS4 Access jest zainstalowany. To menu otwiera Control Alt U.',
-        'ru': 'TS4 Access установлен. Это меню открывается по Control Alt U.',
-        'ja': 'TS4 Accessがインストールされました。このメニューはControl Alt Uで開きます。',
-        'ko': 'TS4 Access가 설치되었습니다. 이 메뉴는 Control Alt U로 엽니다.',
-        'zh': 'TS4 Access 已安裝。按 Control Alt U 開啟此選單。',
-        'sv': 'TS4 Access är installerat. Menyn öppnas med Control Alt U.',
-        'da': 'TS4 Access er installeret. Menuen åbnes med Control Alt U.',
-        'fi': 'TS4 Access on asennettu. Valikko avautuu Control Alt U:lla.',
-        'nb': 'TS4 Access er installert. Menyen åpnes med Control Alt U.',
-        'cs': 'TS4 Access je nainstalován. Tuto nabídku otevře Control Alt U.',
+        'en': 'TS4 Access is installed. This menu opens with Control Alt H.',
+        'de': 'TS4 Access ist installiert. Dieses Menü öffnet sich mit Strg Alt H.',
+        'fr': "TS4 Access est installé. Ce menu s'ouvre avec Contrôle Alt H.",
+        'es': 'TS4 Access está instalado. Este menú se abre con Control Alt H.',
+        'it': 'TS4 Access è installato. Questo menu si apre con Control Alt H.',
+        'pt': 'TS4 Access está instalado. Este menu abre com Control Alt H.',
+        'nl': 'TS4 Access is geïnstalleerd. Dit menu opent met Control Alt H.',
+        'pl': 'TS4 Access jest zainstalowany. To menu otwiera Control Alt H.',
+        'ru': 'TS4 Access установлен. Это меню открывается по Control Alt H.',
+        'ja': 'TS4 Accessがインストールされました。このメニューはControl Alt Hで開きます。',
+        'ko': 'TS4 Access가 설치되었습니다. 이 메뉴는 Control Alt H로 엽니다.',
+        'zh': 'TS4 Access 已安裝。按 Control Alt H 開啟此選單。',
+        'sv': 'TS4 Access är installerat. Menyn öppnas med Control Alt H.',
+        'da': 'TS4 Access er installeret. Menuen åbnes med Control Alt H.',
+        'fi': 'TS4 Access on asennettu. Valikko avautuu Control Alt H:lla.',
+        'nb': 'TS4 Access er installert. Menyen åpnes med Control Alt H.',
+        'cs': 'TS4 Access je nainstalován. Tuto nabídku otevře Control Alt H.',
     },
     'menu help': {
         'en': 'Settings menu. Hold Control and Alt: up and down to move, left and right to change, Enter to switch, Backspace to close, S to read all settings, H for this help.',
@@ -892,6 +910,10 @@ _TRANSLATIONS.update({
         ('owned businesses', 'Owned businesses', 'Posiadane firmy'),
         ('calendar', 'Calendar', 'Kalendarz'),
         ('household sims', 'Household Sims', 'Simowie w rodzinie'),
+        ('away actions', 'Away actions', 'Działania poza parcelą'),
+        ('away actions instructions', 'Choose a household Sim who is away from this lot. Enter opens their available portrait actions. Escape closes.',
+         'Wybierz Sima z rodziny poza tą parcelą. Enter otwiera dostępne działania portretu. Escape zamyka.'),
+        ('no away household sims', 'No household Sims are away from this lot.', 'Wszyscy Simowie z rodziny są na tej parceli.'),
         ('known contacts', 'Known contacts', 'Znajomi'),
         ('build cursor', 'Build cursor', 'Kursor budowania'),
         ('build placement', 'Build placement', 'Umieszczanie obiektów'),
@@ -1145,6 +1167,11 @@ _TRANSLATIONS['scanner unavailable'] = {
     'sv': 'inte tillgänglig', 'da': 'ikke tilgængelig',
     'fi': 'ei käytettävissä', 'nb': 'utilgjengelig', 'cs': 'nedostupné',
 }
+
+
+_TRANSLATIONS['photography controls'] = {'en': 'Photography controls', 'de': 'Fotosteuerung'}
+_TRANSLATIONS['current event goals'] = {'en': 'Current event goals', 'de': 'Aktuelle Veranstaltungsziele'}
+_TRANSLATIONS['event goals unavailable'] = {'en': 'Goals are not available for this event right now.', 'de': 'Die Ziele dieser Veranstaltung sind gerade nicht verfügbar.'}
 
 
 def _detect_lang():

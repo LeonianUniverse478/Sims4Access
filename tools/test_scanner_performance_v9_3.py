@@ -44,7 +44,7 @@ class ScannerPerformanceTests(unittest.TestCase):
                 patch.object(scanner, '_tag_names', return_value={'BuyCatSS_Desk'}) as tags, \
                 patch.object(scanner, '_buy_flags', return_value=0) as flags:
             scanner._scan()
-            scanner._group_index = scanner._groups.index('SURFACE')
+            scanner._group_index = scanner._groups.index(scanner.OBJECTS)
             scanner._item_index = 1  # object 3, farther away
             objects[0].custom_name = 'Renamed desk'
             objects[0].position.x = 2
@@ -58,7 +58,7 @@ class ScannerPerformanceTests(unittest.TestCase):
             objects[0].is_in_inventory = lambda: True
             objects[1].is_hidden = lambda: True
             scanner._scan(preserve=True)
-            self.assertNotIn('SURFACE', scanner._groups)
+            self.assertNotIn(scanner.OBJECTS, scanner._groups)
 
     def test_definition_cache_expires_and_is_bounded(self):
         obj = types.SimpleNamespace(definition=object())

@@ -394,6 +394,7 @@ package widgets.GameTray.controls
          CommunicationManager.AddMessageListener("A11yTravelResult",this.A11yHandleTravelResult,this);
          CommunicationManager.AddMessageListener("GoToShare",this.HandleGoToShare,this);
          CommunicationManager.AddMessageListener("RefreshModeControl",this.HandleRefreshModeControl,this);
+         CommunicationManager.AddMessageListener("A11yNativeFloorQuery",this.A11yNativeFloorQuery,this);
          CommunicationManager.AddMessageListener("BBRefreshLevelData",this.RefreshFloorData,this);
          CommunicationManager.AddMessageListener("BBUpdateWallViewMode",this.RefreshWallData,this);
          CommunicationManager.AddMessageListener("ShowCameraControl",this.HandleShowCameraControl,this);
@@ -2131,6 +2132,46 @@ package widgets.GameTray.controls
          this.mbIgnoreBuildBuyLockUnlock = CommunicationManager.CallGameService("IsForceFreeBuild",null,true) as Boolean;
       }
       
+      // Read-only: the same authoritative data used by RefreshFloorData.
+      protected var mA11yFloorQuerySequence:int = 0;
+
+      public function A11yNativeFloorQuery(param1:Object = null) : void
+      {
+         this.mA11yFloorQuerySequence = this.mA11yFloorQuerySequence + 1;
+         var status:String = "unavailable";
+         var zone:String = "0";
+         var current:int = 0;
+         var minimum:int = 0;
+         var maximum:int = 0;
+         try
+         {
+            zone = String(CommunicationManager.CallGameService("BBGetCurrentZoneId",null,true));
+            if(this.mGameState == GameStates.BUILD && !GameStateFlags.IsBetweenStates)
+            {
+               var info:Object = CommunicationManager.CallGameService("BBGetLevelInfo",null,true);
+               if(info != null && info.hasOwnProperty("curLevel") && info.hasOwnProperty("minLevel") && info.hasOwnProperty("maxLevel"))
+               {
+                  var c:Number = Number(info["curLevel"]);
+                  var lo:Number = Number(info["minLevel"]);
+                  var hi:Number = Number(info["maxLevel"]);
+                  if(typeof info["curLevel"] == "number" && typeof info["minLevel"] == "number" && typeof info["maxLevel"] == "number" && isFinite(c) && isFinite(lo) && isFinite(hi) && int(c) == c && int(lo) == lo && int(hi) == hi && lo >= -64 && hi <= 64 && lo <= c && c <= hi)
+                  {
+                     current = int(c); minimum = int(lo); maximum = int(hi); status = "ok";
+                  }
+               }
+            }
+         }
+         catch(e:Error) { status = "error"; }
+         try
+         {
+            CommunicationManager.CallGameService("PostServerCommand",{
+               "command":"a11y.floor_native",
+               "commandArgs":[zone,this.mA11yFloorQuerySequence,status,current,minimum,maximum]
+            });
+         }
+         catch(replyError:Error) { }
+      }
+
       public function RefreshFloorData(param1:Object = null) : void
       {
          var _loc2_:Object = CommunicationManager.CallGameService("BBGetLevelInfo",null,true);

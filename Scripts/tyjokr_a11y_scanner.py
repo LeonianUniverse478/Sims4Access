@@ -14,13 +14,9 @@ How it stays in the game's own words:
   cannot turn a key into text, so the hash goes to the Flash layer in a
   message name ("A11y|loc|<hash>|<hash>"), the client resolves it in the
   player's language, and the text comes back on a11y.loc_enc.
-- Categories are the catalog's own, two levels deep. The main category is
-  the buy category the client reports for the object's definition
-  (build_buy.get_object_buy_category_flags: Comfort, Surfaces, Decorations,
-  Electronics, Appliances, Plumbing, Lighting, Kids, Activities and Skills,
-  Storage, Pets, Transportation), spoken with the catalog's own filter
-  labels; build-mode things (doors, gates, ladders, pools) sit under Build
-  and anything the catalog never sold under Misc. The subcategory is the
+- Yourself and other Sims are separate groups. Nearby Objects are grouped
+  by the object's build/buy tag or function, using the game's own labels.
+  The subcategory is the
   object's build/buy tag label (Beds, Sofas, Doors, or a function label for
   spawned and crafted things), from tyjokr_a11y_buycat (generated from the
   tuning dump and the client's KeysBB), resolved the same way. Sims use the
@@ -58,10 +54,13 @@ import tyjokr_a11y_availability as availability
 REF_OBJECT = 0xA11E5CA1
 REF_SIM = 0xA11E5CA2
 
-MAX_DISTANCE = 40.0        # metres; Sims are always listed regardless
+MAX_DISTANCE = 40.0        # metres: the default scanner range (RANGES); Sims are always listed
 _LOC_TIMEOUT = 0.6         # seconds to wait for the client before speaking without a name
 
 SIMS = 'SIMS'
+YOURSELF = 'YOURSELF'
+OBJECTS = 'OBJECTS'
+GROUP_TERMS = {YOURSELF: 'yourself', OBJECTS: 'nearby objects'}
 MISC = 'MISC'
 BUILD = 'BUILD'
 _COMPASS = ('north', 'north east', 'east', 'south east',
@@ -90,7 +89,7 @@ class Entry(object):
         self.bearing = bearing
         self.level_delta = level_delta
         self.category = category      # subcategory: a labelled tag name, SIMS or MISC
-        self.group = group            # main category: a buycat.GROUP_ORDER key
+        self.group = group            # main scanner group
         self.first_name = first_name
         self.availability = 'pending'
         self.role = ''                # Sims: a spoken role such as 'patient, waiting'
@@ -385,6 +384,12 @@ def _label_hash(key):
     return buycat.TAG_LABEL_HASH.get(key, buycat.MISC_LABEL_HASH)
 
 
+def _label_part(key):
+    if key in GROUP_TERMS:
+        return lang.t(GROUP_TERMS[key])
+    return ('loc', _label_hash(key))
+
+
 # ------------------------------------------------------------------ scanning
 
 def _has_interactions(obj):
@@ -509,6 +514,136 @@ def _subs_in(entries):
     return seen
 
 
+# ------------------------------------------------------------ scanner range
+#
+# Contributed by DaRainbowGirlXX (2026-10-16): Ctrl+Alt+comma and
+# Ctrl+Alt+period step through these ranges; the choice is saved. Metre
+# ranges still list every Sim, as the scanner always has. The lot, floor and
+# room ranges keep only things on the active lot (and on the active Sim's
+# floor, or in its room).
+RANGES = (
+    ('6 meters', 6.0, 'distance'),
+    ('12 meters', 12.0, 'distance'),
+    ('24 meters', 24.0, 'distance'),
+    ('40 meters', 40.0, 'distance'),
+    ('whole lot', None, 'lot'),
+    ('this floor', None, 'floor'),
+    ('this room', None, 'room'),
+)
+RANGE_NAMES = tuple(name for name, _limit, _kind in RANGES)
+
+
+def _range():
+    wanted = str(settings.get('scanner_range', '40 meters') or '').strip().lower()
+    return next((mode for mode in RANGES if mode[0] == wanted), RANGES[3])
+
+
+def _range_limit():
+    limit = _range()[1]
+    return limit if limit is not None else 1000000.0
+
+
+def _object_for_entry(entry):
+    try:
+        import services
+        obj = services.object_manager().get(entry.obj_id)
+        if obj is not None:
+            return obj
+        info = services.sim_info_manager().get(entry.obj_id)
+        if info is not None:
+            return info.get_sim_instance()
+    except Exception:
+        return None
+
+
+def _on_active_lot(obj):
+    try:
+        import services
+        return bool(services.active_lot().is_position_on_lot(obj.position))
+    except Exception:
+        return False
+
+
+def _room_id(obj):
+    try:
+        import build_buy
+        import services
+        return build_buy.get_room_id(services.current_zone_id(), obj.position,
+                                     int(getattr(obj, 'level', 0) or 0))
+    except Exception:
+        return None
+
+
+def _in_range(entry, active_room):
+    _name, limit, kind = _range()
+    if limit is not None:
+        return bool(getattr(entry, 'is_sim', False)) or entry.distance <= limit
+    obj = _object_for_entry(entry)
+    if obj is None:
+        return entry.distance == 0
+    if not _on_active_lot(obj):
+        return False
+    if kind == 'lot':
+        return True
+    if kind == 'floor':
+        return entry.level_delta == 0
+    if entry.level_delta != 0 or active_room is None:
+        return False
+    return _room_id(obj) == active_room
+
+
+def _apply_range():
+    """Filter the fresh lists to the chosen range, inside _scan, so the
+    scanner's own focus restore runs on the filtered lists."""
+    if _range()[1] is not None:
+        return      # metre ranges were applied while collecting
+    active_room = None
+    if _range()[2] == 'room':
+        try:
+            import services
+            active_room = _room_id(services.get_active_sim())
+        except Exception:
+            active_room = None
+    for key in list(_by_group):
+        kept = [entry for entry in _by_group[key] if _in_range(entry, active_room)]
+        if kept:
+            _by_group[key] = kept
+        else:
+            del _by_group[key]
+
+
+def cycle_range(delta):
+    """Ctrl+Alt+comma / period. Simulation thread."""
+    names = list(RANGE_NAMES)
+    index = names.index(_range()[0])
+    name = names[(index + (1 if delta > 0 else -1)) % len(names)]
+    settings.set('scanner_range', name)
+    speech.log_line('scanner: range {}'.format(name))
+    try:
+        import services
+        has_sim = services.get_active_sim() is not None
+    except Exception:
+        has_sim = False
+    if not has_sim:
+        speech.speak(lang.t('no lot loaded'), explicit=True)
+        return False
+    found = _scan(preserve=True)
+    parts = ['Scanner range: {}. '.format(name)]
+    parts.extend(_tree_parts() if found else ['Nothing in this range. '])
+    _speak_parts(parts)
+    return True
+
+
+def apply_range_setting():
+    """The settings menu changed the range: refresh a live scanner list."""
+    try:
+        if enabled() and _groups:
+            _scan(preserve=True)
+    except Exception as ex:
+        speech.log_line('scanner: range refresh failed: {!r}'.format(ex))
+
+
+
 def _scan(preserve=False):
     """Rebuild the lists around the active Sim. Simulation thread only."""
     global _by_group, _groups, _group_index, _item_index, _origin_level
@@ -547,9 +682,10 @@ def _scan(preserve=False):
     roles = _patient_roles()
     for other in sims:
         try:
-            entry = _entry_for(other, origin, _origin_level, True, SIMS, SIMS)
+            group = YOURSELF if other is sim else SIMS
+            entry = _entry_for(other, origin, _origin_level, True, group, group)
             entry.role = roles.get(other.id, '')
-            _by_group.setdefault(SIMS, []).append(entry)
+            _by_group.setdefault(group, []).append(entry)
         except Exception as ex:
             speech.log_line('scanner: sim entry failed: {!r}'.format(ex))
     count = 0
@@ -561,6 +697,7 @@ def _scan(preserve=False):
     except Exception as ex:
         speech.log_line('scanner: object listing failed: {!r}'.format(ex))
         objects = []
+    limit = _range_limit()
     candidates = []
     for obj in objects:
         examined += 1
@@ -572,7 +709,7 @@ def _scan(preserve=False):
             pos = obj.position
             dx = float(pos.x) - float(origin.x)
             dz = float(pos.z) - float(origin.z)
-            if dx * dx + dz * dz > MAX_DISTANCE * MAX_DISTANCE:
+            if dx * dx + dz * dz > limit * limit:
                 continue
             in_range += 1
             checker = getattr(obj, 'is_in_inventory', None)
@@ -596,25 +733,26 @@ def _scan(preserve=False):
                 continue
             entry = _entry_for(obj, origin, _origin_level, False, MISC, MISC)
             entry.availability = verdict
-            if entry.distance > MAX_DISTANCE:
+            if entry.distance > limit:
                 continue
-            entry.category, entry.group, names, flags = _classification(obj, _last_scan)
-            _by_group.setdefault(entry.group, []).append(entry)
+            entry.category, catalog_group, names, flags = _classification(obj, _last_scan)
+            entry.group = OBJECTS
+            _by_group.setdefault(OBJECTS, []).append(entry)
             count += 1
-            if not preserve and entry.group in (MISC, BUILD) and len(notes) < 12:
+            if not preserve and catalog_group in (MISC, BUILD) and len(notes) < 12:
                 # Diagnostics for the two catch-alls: what did the client
                 # report, and which labelled tags did the definition carry?
                 labelled = sorted(name for name in names
                                   if name.startswith(('BuyCat', 'Build_', 'Func_')))
                 notes.append('{} {} flags=0x{:X} sub={} tags={}'.format(
-                    entry.group, getattr(obj.definition, 'name', '?'), flags,
+                    catalog_group, getattr(obj.definition, 'name', '?'), flags,
                     entry.category, ','.join(labelled[:6])))
         except Exception:
             continue
     for entries in _by_group.values():
         entries.sort(key=lambda e: (_SUB_RANK.get(e.category, 1 << 20), e.distance))
-    # Sims first (the active Sim is first inside), then the catalog's order.
-    _groups = [key for key in buycat.GROUP_ORDER if _by_group.get(key)]
+    _apply_range()
+    _groups = [key for key in (YOURSELF, SIMS, OBJECTS) if _by_group.get(key)]
     summary = ' '.join('{}:{}/{}'.format(key, len(_by_group[key]),
                                          len(_subs_in(_by_group[key])))
                        for key in _groups)
@@ -753,19 +891,20 @@ def _place_part(entry):
 
 
 def _entry_parts(entry, index, total):
+    import tyjokr_a11y_cleanliness as cleanliness
     status = ', ' + lang.t('scanner unavailable') if entry.availability == 'locked' else ''
     if entry.role:
         status = ', ' + entry.role + status
-    return [_name_part(entry), status + ', ' + _place_part(entry),
+    return [_name_part(entry), cleanliness.suffix(entry) + status + ', ' + _place_part(entry),
             '. {} {} {}.'.format(index + 1, lang.t('of'), total)]
 
 
 def _sub_label_part(entries, entry):
     """The subcategory name, or None when the main category has a single
     subcategory that is the category itself (Sims, bare Misc)."""
-    if len(_subs_in(entries)) <= 1 and _label_hash(entry.category) == _label_hash(entry.group):
+    if len(_subs_in(entries)) <= 1 and _label_part(entry.category) == _label_part(entry.group):
         return None
-    return ('loc', _label_hash(entry.category))
+    return _label_part(entry.category)
 
 
 def _sub_count_part(entries, entry):
@@ -780,7 +919,7 @@ def _group_parts():
     key = _group_key()
     if key is None:
         return [lang.t('nothing nearby')]
-    parts = [('loc', _label_hash(key)),
+    parts = [_label_part(key),
              ', {} {}. '.format(len(entries), lang.t('items'))]
     entry = _current()
     if entry is not None:
@@ -789,7 +928,8 @@ def _group_parts():
             parts.append(sub)
             parts.append(_sub_count_part(entries, entry))
         parts.append(_name_part(entry))
-        parts.append((', ' + entry.role if entry.role else '') + ', ' + _place_part(entry) + '.')
+        import tyjokr_a11y_cleanliness as cleanliness
+        parts.append(cleanliness.suffix(entry) + (', ' + entry.role if entry.role else '') + ', ' + _place_part(entry) + '.')
     return parts
 
 
@@ -945,13 +1085,13 @@ def _tree_parts():
         return [lang.t('nothing nearby')]
     entries = _entries()
     if _tree_level == 'groups':
-        return _kind('scanner category') + [('loc', _label_hash(_group_key())),
+        return _kind('scanner category') + [_label_part(_group_key()),
                 ', {} {}. {} {} {}.'.format(len(entries), lang.t('items'),
                     _group_index + 1, lang.t('of'), len(_groups))]
     subs = _subs_in(entries)
     siblings = [e for e in entries if e.category == entry.category]
     if _tree_level == 'subcategories':
-        return _kind('scanner subcategory') + [('loc', _label_hash(entry.category)),
+        return _kind('scanner subcategory') + [_label_part(entry.category),
                 ', {} {}. {} {} {}.'.format(len(siblings), lang.t('items'),
                     subs.index(entry.category) + 1, lang.t('of'), len(subs))]
     return _entry_parts(entry, siblings.index(entry), len(siblings))
@@ -1053,7 +1193,7 @@ def _do_step_sub(step):
     _tree_restore(subs[(subs.index(entry.category) + step) % len(subs)])
     _tree_level = 'items'
     _tree_remember()
-    _speak_parts([('loc', _label_hash(_current().category)), '. '] + _tree_parts())
+    _speak_parts([_label_part(_current().category), '. '] + _tree_parts())
 
 
 def _do_where():
@@ -1069,7 +1209,7 @@ def _do_where():
         parts.append(lang.t('nothing nearby'))
     else:
         entries = _entries()
-        parts.append(('loc', _label_hash(entry.group)))
+        parts.append(_label_part(entry.group))
         sub = _sub_label_part(entries, entry)
         if sub is not None:
             parts.append(', ')
@@ -1150,6 +1290,8 @@ def _dispatch(intent):
         _do_where()
     elif intent == 'back':
         _tree_back()
+    elif intent in ('scopeprev', 'scopenext'):
+        cycle_range(1 if intent == 'scopenext' else -1)
     else:
         speech.log_line('scanner: unknown intent {!r}'.format(intent))
 
@@ -1281,3 +1423,13 @@ try:
     _install_zone_hook()
 except Exception as _zone_ex:
     speech.log_line('scanner: zone hook install failed: {!r}'.format(_zone_ex))
+
+
+# Install only the remaining local extensions after module initialization,
+# on the simulation pump. Upstream owns the integrated contribution controls.
+try:
+    import tyjokr_a11y_extensions
+    import tyjokr_a11y_plus_core
+    tyjokr_a11y_plus_core.post(tyjokr_a11y_extensions.install)
+except Exception as _extensions_error:
+    speech.log_line('local extensions could not be queued: {!r}'.format(_extensions_error))

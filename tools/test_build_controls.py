@@ -159,26 +159,30 @@ class GateTests(Base):
 
     def test_hub_lists_build_rows_only_while_on(self):
         names = []
-        with patch.object(hub, '_window', side_effect=lambda title, text, rows: names.append([r[0] for r in rows])), \
+        def record(title, text, rows):
+            names.append({name: callback for name, _, callback in rows})
+
+        build_rows = {lang.t('build cursor'), lang.t('build actions'), lang.t('read-only lot grid'),
+                      lang.t('build placement'), lang.t('guided placement'),
+                      lang.t('undo last accessible placement')}
+        with patch.object(hub, '_window', side_effect=record), \
                 patch.object(hub.menu, '_raw', side_effect=lambda text: text):
             hub.open_hub()
+            names[0][lang.t('home and lot')]()
             switch(True)
             hub.open_hub()
-        # 2026-09-26: one Build row. Live mode offers the read-only grid; Build
-        # mode offers object placement. The pixel cursor and its actions window
-        # are console-only (a11y.build, a11y.buildmenu).
-        build_rows = {lang.t('build cursor'), lang.t('build actions'), lang.t('read-only lot grid'),
-                      lang.t('build placement')}
+            names[2][lang.t('home and lot')]()
         self.assertFalse(build_rows & set(names[0]))
-        self.assertEqual(build_rows & set(names[1]), {lang.t('read-only lot grid')})
-        self.assertEqual(len(names[1]) - len(names[0]), 1)
-        self.assertEqual(names[0][-1], lang.t('settings menu'))    # the way back on stays last
+        self.assertFalse(build_rows & set(names[1]))
+        self.assertEqual(build_rows & set(names[3]), {lang.t('read-only lot grid')})
+        self.assertEqual(list(names[0])[-1], lang.t('settings menu'))
         import tyjokr_a11y_place as place
-        with patch.object(hub, '_window', side_effect=lambda title, text, rows: names.append([r[0] for r in rows])), \
+        with patch.object(hub, '_window', side_effect=record), \
                 patch.object(hub.menu, '_raw', side_effect=lambda text: text), \
                 patch.object(place, 'in_build_mode', return_value=True):
             hub.open_hub()
-        self.assertEqual(build_rows & set(names[2]), {lang.t('build placement')})
+        self.assertEqual(build_rows & set(names[4]), {lang.t('build placement'), lang.t('guided placement'),
+                                                    lang.t('undo last accessible placement')})
         self.assertNotEqual(lang.t('build placement'), 'build placement')
 
     def test_native_feedback_is_ignored_while_off(self):

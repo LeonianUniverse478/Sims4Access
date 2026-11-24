@@ -272,8 +272,8 @@ def requirement(def_id):
 
 
 _NEEDS = {
-    'wall': ('It hangs on a wall. Wall placement is not available from the grid yet.',
-             'To wisi na ścianie. Umieszczanie na ścianie nie jest jeszcze dostępne z siatki.'),
+    'wall': ('It hangs on a wall. Use the Build cursor, Control Alt B, to hang it.',
+             'To wisi na ścianie. Użyj kursora budowania, Control Alt B, aby to powiesić.'),
     'ceiling': ('It hangs from a ceiling. Ceiling placement is not available from the grid yet.',
                 'To wisi pod sufitem. Umieszczanie pod sufitem nie jest jeszcze dostępne z siatki.'),
     'fence': ('It attaches to a fence. Fence placement is not available from the grid yet.',
@@ -298,7 +298,7 @@ def _surface_rank(obj):
     return 2
 
 
-def _free_slot(obj, position, level):
+def _free_slot(obj, position, level, accepts=None):
     """(surface, slot) near the cursor that the game accepts for this object."""
     import services
     nearby = []
@@ -317,7 +317,9 @@ def _free_slot(obj, position, level):
                 continue
             dx = float(surface.position.x) - float(position.x)
             dz = float(surface.position.z) - float(position.z)
-            if abs(dx) > SLOT_SEARCH or abs(dz) > SLOT_SEARCH:
+            if accepts is None and (abs(dx) > SLOT_SEARCH or abs(dz) > SLOT_SEARCH):
+                continue
+            if accepts is not None and not accepts(surface.position):
                 continue
             nearby.append((_surface_rank(surface), dx * dx + dz * dz, surface))
         except Exception:
@@ -437,9 +439,180 @@ def tile_key(position, level):
     return (int(math.floor(float(position.x))), int(math.floor(float(position.z))), int(level))
 
 
+class LotArea:
+    """A room or a section of the unroomed lot on a particular floor."""
+
+    def __init__(self, index, centers, points, room_at, room_id):
+        self.index = index
+        self.centers = centers
+        self.points = points
+        self.room_at = room_at
+        self.room_id = room_id
+
+    @staticmethod
+    def distance(point, center):
+        return (point.x - center.x) ** 2 + (point.z - center.z) ** 2
+
+    def contains(self, point):
+        room_id = self.room_at(point)
+        if self.room_id or room_id:
+            return room_id == self.room_id
+        return min(range(len(self.centers)),
+                   key=lambda i: self.distance(point, self.centers[i])) == self.index
+
+
+def _guided_areas(lot, level, routing_surface):
+    import build_buy
+    import terrain
+    from sims4.math import Vector3
+    import tyjokr_a11y_plus_rooms as room_reader
+
+    centers = lot.get_uniform_sampling_of_points(3, 3)
+    zone_id = _zone_id()
+    named_rooms = {room.rid: room for room in room_reader.scan_rooms() if room.level == level}
+
+    def room_at(point):
+        room_id = build_buy.get_room_id(zone_id, point, level)
+        return room_id if room_id in named_rooms else None
+
+    sections = {}
+    for sample in lot.get_uniform_sampling_of_points(
+            min(33, max(9, math.ceil(lot.size_x / 2))),
+            min(33, max(9, math.ceil(lot.size_z / 2)))):
+        if not lot.is_position_on_lot(sample) or build_buy.is_location_pool(sample, level):
+            continue
+        if level != 0 and not build_buy.has_floor_at_location(sample, level):
+            continue
+        height = terrain.get_terrain_height(sample.x, sample.z, routing_surface=routing_surface)
+        if height is None or not math.isfinite(height):
+            continue
+        point = Vector3(sample.x, height, sample.z)
+        room_id = room_at(point)
+        if room_id is None:
+            index = min(range(len(centers)), key=lambda i: LotArea.distance(point, centers[i]))
+            sections.setdefault(index, []).append(point)
+
+    for room_id, room in named_rooms.items():
+        points = []
+        for x, z in room.tiles:
+            height = terrain.get_terrain_height(x, z, routing_surface=routing_surface)
+            if height is None or not math.isfinite(height):
+                continue
+            point = Vector3(x, height, z)
+            if lot.is_position_on_lot(point) and not build_buy.is_location_pool(point, level):
+                points.append(point)
+        if not points:
+            continue
+        x, z = room.center
+        center = Vector3(x, points[0].y, z)
+        points.sort(key=lambda point: LotArea.distance(point, center))
+        yield center, LotArea(None, centers, points, room_at, room_id), room.name
+    for index, points in sorted(sections.items()):
+        center = centers[index]
+        points.sort(key=lambda point: LotArea.distance(point, center))
+        yield center, LotArea(index, centers, points, room_at, None), None
+
+
+def guided_placement():
+    """Choose a floor, then choose an area and confirm the purchase."""
+    import services
+    import tyjokr_a11y_build as build
+    import tyjokr_a11y_hub as hub
+    import tyjokr_a11y_menu as menu
+
+    if not build.controls_enabled():
+        return build.refuse_disabled()
+    if not _build_only():
+        return False
+    item = product()
+    if item is None:
+        _say_text('Choose an object in the Build catalog first.',
+                  'Najpierw wybierz obiekt w katalogu trybu budowania.')
+        return False
+    need = requirement(item['id'])
+    if need in _NEEDS:
+        _say_text(*_NEEDS[need])
+        return False
+    lot = services.active_lot()
+    if lot is None:
+        return False
+    owner = _household_id()
+    rows = [(menu._raw(_floor_name(level)), None,
+             lambda value=level: _choose_area(item, owner, value))
+            for level in range(int(lot.min_level), int(lot.max_level) + 1)]
+    if not rows:
+        _say_text('No lot floors available.', 'Brak dostępnych pięter.')
+        return False
+    return hub._window('guided placement', 'choose a floor to search', rows)
+
+
+def _floor_name(level):
+    if level == 0:
+        return _text('Ground floor', 'Parter')
+    return _text('Floor {}'.format(level), 'Piętro {}'.format(level))
+
+
+def _guided_current(item, owner):
+    import tyjokr_a11y_build as build
+    import tyjokr_a11y_keys as keys
+    if (item is product() and owner == _household_id() and in_build_mode()
+            and build.controls_enabled() and not keys._editing_active):
+        return True
+    _say_text('Placement selection expired. Open guided placement again.',
+              'Wybór wygasł. Otwórz ponownie umieszczanie wspomagane.')
+    return False
+
+
+def _choose_area(item, owner, level):
+    import routing
+    import services
+    import tyjokr_a11y_hub as hub
+    import tyjokr_a11y_menu as menu
+    import tyjokr_a11y_scanner as scanner
+
+    if not _guided_current(item, owner):
+        return False
+    lot = services.active_lot()
+    surface = routing.SurfaceIdentifier(_zone_id(), level, routing.SurfaceType.SURFACETYPE_WORLD)
+    try:
+        definition = services.definition_manager().get(item['id'], get_fallback_definition_id=False)
+        price = int(definition.price)
+        areas = list(_guided_areas(lot, level, surface))
+    except Exception as ex:
+        speech.log_line('place: could not sample the lot ({!r})'.format(ex))
+        areas = []
+    if not areas:
+        _say_text('No areas found on that floor.', 'Nie znaleziono obszarów na tym piętrze.')
+        return False
+
+    def buy(area):
+        return (_guided_current(item, owner)
+                and place(area.points[0], level, surface, area=area))
+
+    rows = []
+    labels = []
+    room_number = 0
+    for center, area, room_name in areas:
+        dx, dz = center.x - lot.center.x, center.z - lot.center.z
+        label = (_text('Centre of the lot', 'Środek parceli') if area.index == 4
+                 else lang.t(scanner._COMPASS[scanner._bearing(dx, dz)]))
+        if area.room_id is not None:
+            room_number += 1
+            label = '{}, {}'.format(room_name or _text('Room {}', 'Pokój {}').format(room_number), label)
+        labels.append(label)
+    detail = _text('Buy {} for {} simoleons if it fits.',
+                   'Kup {} za {} simoleonów, jeśli się zmieści.').format(_product_name(), price)
+    for label, (center, area, _) in zip(labels, areas):
+        if labels.count(label) > 1:
+            label += _text(', {} metres from centre', ', {} metrów od środka').format(
+                round(math.sqrt(LotArea.distance(center, lot.center)), 1))
+        rows.append((menu._raw(label), menu._raw(detail), lambda value=area: buy(value)))
+    return hub._window('guided placement', 'choose an area to buy and place', rows)
+
+
 # -------------------------------------------------------------------- actions
 
-def _checks(position, level, key, guard):
+def _checks(position, level, key, guard, exact=False):
     """Everything that can refuse before an object exists. Speaks the refusal;
     returns (item, price, need) or None."""
     item = product()
@@ -457,7 +630,12 @@ def _checks(position, level, key, guard):
               item['name'] or _product_name(), '.'])
         return None
     need = requirement(item['id'])
-    if need in _NEEDS:
+    # Bare ground, water, ceiling and fence objects go through here only from
+    # the Build cursor's experimental placement (tyjokr_a11y_surfaces), with
+    # exact=True, so the game's own placement test still decides.
+    import tyjokr_a11y_surfaces as surfaces
+    experimental = exact and surfaces.handles(need)
+    if need in _NEEDS and not experimental:
         _say_text(*_NEEDS[need])
         return None
     try:
@@ -481,7 +659,7 @@ def _checks(position, level, key, guard):
         if not services.active_lot().is_position_on_lot(position):
             _say_text('That point is not on this lot.', 'Ten punkt nie należy do tej parceli.')
             return None
-        if build_buy.is_location_pool(position, level):
+        if build_buy.is_location_pool(position, level) and not (experimental and need == 'water'):
             _say_text('That point is in a pool.', 'Ten punkt jest w basenie.')
             return None
     except Exception as ex:
@@ -492,7 +670,7 @@ def _checks(position, level, key, guard):
     return item, price, need
 
 
-def place(position, level, routing_surface, angle=0.0, exact=False):
+def place(position, level, routing_surface, angle=0.0, exact=False, surface_id=None, chair_request=None, area=None):
     """Ctrl+Alt+Enter on the grid: ask the client to put down EA's held
     product; the object is bought and placed when it answers (a11y.buildhand).
     exact (the Build cursor): put it at position and angle as they are,
@@ -504,12 +682,15 @@ def place(position, level, routing_surface, angle=0.0, exact=False):
         _say_text('Still placing the last one.', 'Trwa umieszczanie poprzedniego obiektu.')
         return False
     settle_owed()
-    if _checks(position, level, key, guard=True) is None:
+    if _checks(position, level, key, guard=area is None, exact=exact) is None:
         return False
     _pending['serial'] += 1
     serial = _pending['serial']
-    _pending.update(at=now, args=(position, level, routing_surface, angle, key, exact),
-                    zone=_zone_id(), product=(product() or {}).get('id'))
+    args = (position, level, routing_surface, angle, key, exact)
+    if area is not None:
+        args += (area,)
+    _pending.update(at=now, args=args, zone=_zone_id(), product=product(),
+                    household=_household_id(), surface_id=surface_id, chair_request=chair_request)
     if not _drop_native_hand(serial):
         _pending['args'] = None
         _say_text('The Build tool is not answering. Nothing was bought.',
@@ -558,14 +739,14 @@ def acknowledged(serial, ok):
         return False
     item = product()
     if (_pending.get('zone') != _zone_id() or not in_build_mode()
-            or item is None or item['id'] != _pending.get('product')):
+            or item is not _pending.get('product') or _household_id() != _pending.get('household')):
         speech.log_line('place: acknowledgement {} arrived after a change; dropped'.format(serial))
         return False
     return _execute(*args)
 
 
-def _execute(position, level, routing_surface, angle, key, exact=False):
-    checked = _checks(position, level, key, guard=False)
+def _execute(position, level, routing_surface, angle, key, exact=False, area=None):
+    checked = _checks(position, level, key, guard=False, exact=exact)
     if checked is None:
         return False
     item, price, need = checked
@@ -579,7 +760,8 @@ def _execute(position, level, routing_surface, angle, key, exact=False):
         _say_text('The game could not create that object.', 'Gra nie mogła utworzyć tego obiektu.')
         return False
     try:
-        return _finish(obj, item, price, need, position, level, routing_surface, angle, key, exact)
+        args = (obj, item, price, need, position, level, routing_surface, angle, key, exact)
+        return _finish(*args) if area is None else _finish(*args, area=area)
     except Exception as ex:
         speech.log_line('place: placement raised {!r}; removing the object'.format(ex))
         _destroy(obj)
@@ -588,18 +770,71 @@ def _execute(position, level, routing_surface, angle, key, exact=False):
         return False
 
 
-def _finish(obj, item, price, need, position, level, routing_surface, angle, key, exact=False):
+def _area_location(obj, area, level, routing_surface):
+    import build_buy
+    import services
+    import sims4.math
+    lot = services.active_lot()
+    # Spread the attempts across the area when the sampling grid found many
+    # anchors. Try the most central first and still search near its edges.
+    step = max(1, math.ceil(len(area.points) / 9))
+    for point in area.points[::step]:
+        if not lot.is_position_on_lot(point) or build_buy.is_location_pool(point, level):
+            continue
+        for turn in range(4):
+            spot = _good_location(obj, point, _yaw(turn * sims4.math.PI / 2), routing_surface)
+            if (spot is not None and area.contains(spot[0])
+                    and lot.is_position_on_lot(spot[0])
+                    and not build_buy.is_location_pool(spot[0], level)
+                    and (level == 0 or build_buy.has_floor_at_location(spot[0], level))):
+                return spot
+    return None
+
+
+def _finish(obj, item, price, need, position, level, routing_surface, angle, key, exact=False, area=None):
     """Put a freshly created obj in place, then own, register and pay for
     it. Any refusal removes it; an exception is handled by the caller."""
     surface = None
+    surface_id = _pending.get('surface_id')
+    chair_request = _pending.get('chair_request')
+    if chair_request is not None:
+        import tyjokr_a11y_chair_snap as chair_snap
+        found=chair_snap.validate(chair_request,obj,item,position,level)
+        if found is None:
+            _destroy(obj)
+            _say_text('The chair seat changed or the game refused it. Nothing was bought.',
+                      'Miejsce na krzesło zmieniło się albo gra je odrzuciła. Nic nie kupiono.')
+            return False
+        need='slot'
+    elif surface_id is not None:
+        import tyjokr_a11y_layers as layers
+        found = layers.selected_surface_slot(surface_id, obj, level)
+        if found is None:
+            _destroy(obj)
+            _say_text('The focused surface changed or has no compatible free slot. Nothing was bought.',
+                      'Wybrana powierzchnia zmieniła się albo nie ma zgodnego wolnego miejsca. Nic nie kupiono.')
+            return False
+        need = 'slot'
     if need == 'slot':
-        found = _free_slot(obj, position, level)
+        if surface_id is None and chair_request is None:
+            found = (_free_slot(obj, position, level) if area is None else
+                     _free_slot(obj, position, level, accepts=area.contains))
         if found is None or not _put_in_slot(obj, found[0], found[1]):
             _destroy(obj)
-            _say_text('It needs a free spot on a desk or table. Move the cursor onto one.',
-                      'To wymaga wolnego miejsca na biurku lub stole. Przesuń kursor na taki mebel.')
+            if area is None:
+                _say_text('It needs a free spot on a desk or table. Move the cursor onto one.',
+                          'To wymaga wolnego miejsca na biurku lub stole. Przesuń kursor na taki mebel.')
+            else:
+                _say_text('No compatible free surface in that area. Nothing was bought.',
+                          'Brak pasującej wolnej powierzchni w tym obszarze. Nic nie kupiono.')
+
             return False
         surface = found[0]
+        if chair_request is not None and not chair_snap.attached(surface,found[1],obj):
+            _destroy(obj)
+            _say_text('The chair did not attach to its seat. Nothing was bought.',
+                      'Krzesło nie zostało przypięte do miejsca. Nic nie kupiono.')
+            return False
     elif exact:
         import tyjokr_a11y_tiles as tiles
         ok, why = tiles.test_fit(obj, item['id'], position, angle, level)
@@ -616,11 +851,17 @@ def _finish(obj, item, price, need, position, level, routing_surface, angle, key
             _say_text('The game could not position that object.', 'Gra nie mogła ustawić tego obiektu.')
             return False
     else:
-        spot = _good_location(obj, position, _yaw(angle), routing_surface)
+        spot = (_good_location(obj, position, _yaw(angle), routing_surface) if area is None
+                else _area_location(obj, area, level, routing_surface))
         if spot is None:
             _destroy(obj)
-            _say_text('No room for it here. Try another point.',
-                      'Brak tu miejsca. Wybierz inny punkt.')
+            if area is None:
+                _say_text('No room for it here. Try another point.',
+                          'Brak tu miejsca. Wybierz inny punkt.')
+            else:
+                _say_text('It could not fit in that area. Nothing was bought.',
+                          'Obiekt nie mieści się w tym obszarze. Nic nie kupiono.')
+
             return False
         try:
             obj.move_to(translation=spot[0], orientation=spot[1], routing_surface=routing_surface)
@@ -641,17 +882,22 @@ def _finish(obj, item, price, need, position, level, routing_surface, angle, key
         _say_text('The lot would not accept it, so nothing was bought.',
                   'Parcela go nie przyjęła, więc nic nie kupiono.')
         return False
+    if chair_request is not None and not chair_snap.attached(surface,found[1],obj):
+        _destroy(obj)
+        _say_text('The game did not retain the chair attachment. Nothing was bought.',
+                  'Gra nie zachowała przypięcia krzesła. Nic nie kupiono.')
+        return False
     if price and not _charge(price):
         _destroy(obj)
         _say_text('Payment failed, so nothing was bought.', 'Płatność nie powiodła się, więc nic nie kupiono.')
         return False
     # Paid: from here on the object is the household's. Nothing below may
     # raise to the caller, whose clean-up would remove a paid object.
-    _after_payment(obj, item, price, owner, surface, position, level, key, exact)
+    _after_payment(obj, item, price, owner, surface, position, level, key, exact, guided=area is not None)
     return True
 
 
-def _after_payment(obj, item, price, owner, surface, position, level, key, exact=False):
+def _after_payment(obj, item, price, owner, surface, position, level, key, exact=False, guided=False):
     try:
         _history.append((obj.id, price, item['name'], owner, _zone_id()))
         del _history[:-MAX_HISTORY]
@@ -661,10 +907,13 @@ def _after_payment(obj, item, price, owner, surface, position, level, key, exact
         _quiet_log('place: placed, but recording it failed ({!r})'.format(ex))
     _quiet_log('place: placed {} {!r} for {}'.format(getattr(obj, 'id', '?'), item.get('name'), price))
     try:
-        if exact and surface is None:
+        if _pending.get('chair_request') is not None and surface is not None:
+            import tyjokr_a11y_chair_snap as chair_snap
+            chair_snap.announce(obj,item,price,surface)
+        elif exact and surface is None:
             _announce_exact(obj, item, price, level, key)
         else:
-            _announce_placed(obj, item, price, surface, position, level, key)
+            _announce_placed(obj, item, price, surface, position, level, key, guided=guided)
     except Exception as ex:
         _quiet_log('place: placed, but the announcement failed ({!r})'.format(ex))
         try:
@@ -680,7 +929,7 @@ def _quiet_log(line):
         pass
 
 
-def _announce_placed(obj, item, price, surface, position, level, key):
+def _announce_placed(obj, item, price, surface, position, level, key, guided=False):
     try:
         _last['position'] = obj.position
         landed = tile_key(obj.position, int(getattr(obj, 'level', level)))
@@ -690,6 +939,9 @@ def _announce_placed(obj, item, price, surface, position, level, key):
     parts = [item['name'] or _product_name()]
     if surface is not None:
         parts += [_text(' placed on ', ' umieszczono na: '), _name_parts(surface)]
+    elif guided:
+        parts += [_text(' placed in the chosen area, ', ' umieszczono w wybranym obszarze, '),
+                  _floor_name(level)]
     else:
         where = _where(obj, position, level)
         if not where or where == lang.t('here'):

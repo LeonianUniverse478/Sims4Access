@@ -178,10 +178,11 @@ class ActionQueueTests(unittest.TestCase):
         self.windows.clear()
         with patch.object(hub, 'action_queue', return_value=True) as opened:
             hub.open_hub()
-            labels = [row[0] for row in self.windows[0][1]]
+            next(row[2] for row in self.windows[0][1] if row[0] == lang.t('now'))()
+            labels = [row[0] for row in self.windows[-1][1]]
             self.assertIn(lang.t('action queue'), labels)
             self.assertNotIn(lang.t('current action'), labels)
-            self.windows[0][1][labels.index(lang.t('action queue'))][2]()
+            self.windows[-1][1][labels.index(lang.t('action queue'))][2]()
         self.assertEqual(opened.call_count, 1)
 
     def test_terms_exist_in_english_and_polish(self):

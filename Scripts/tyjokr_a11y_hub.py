@@ -27,6 +27,7 @@ PANELS = (
     ('social groups', 'OpenSimInfoClubPanel'),
     ('owned businesses', 'OpenHouseholdInfoVenuePanel'),
     ('calendar', 'ShowCalendar'),
+    ('photography controls', 'A11yPhotography'),
 )
 
 
@@ -120,6 +121,16 @@ def select_sim(sim_id):
     return True
 
 
+def away_actions():
+    import tyjokr_a11y_away as away
+    return away.open_away_actions()
+
+
+@sims4.commands.Command('a11y.away', command_type=sims4.commands.CommandType.Live)
+def a11y_away(_connection=None):
+    return away_actions()
+
+
 def household():
     client = _client()
     if client is None:
@@ -171,6 +182,11 @@ def scanner_help():
     return shortcuts.speak()
 
 
+def floor_interactions():
+    import tyjokr_a11y_ground as ground
+    return ground.open_floor_menu()
+
+
 def self_interactions():
     import services
     import tyjokr_a11y_scanner as scanner
@@ -178,7 +194,7 @@ def self_interactions():
     if sim is None or not scanner.enabled() or not scanner._scan():
         _say('action unavailable')
         return False
-    if not scanner.select_item(scanner.SIMS, sim.id):
+    if not scanner.select_item(scanner.YOURSELF, sim.id):
         _say('action unavailable')
         return False
     scanner._do_open()
@@ -577,7 +593,9 @@ def event_actions(situation_id):
     manager, situation = _event(situation_id)
     if situation is None:
         return False
-    rows = [(menu._raw(lang.t('send guests home and end event')), None,
+    rows = [(menu._raw(lang.t('current event goals')), None,
+             lambda: event_goals(situation_id)),
+            (menu._raw(lang.t('send guests home and end event')), None,
              lambda: end_event(situation_id, send_home=True, end=True)),
             (menu._raw(lang.t('end event')), None,
              lambda: end_event(situation_id, send_home=False, end=True)),
@@ -585,6 +603,11 @@ def event_actions(situation_id):
              lambda: end_event(situation_id, send_home=True, end=False))]
     return _window('events', 'event actions instructions', rows,
                    localized_title=getattr(situation, 'display_name', None))
+
+
+def event_goals(situation_id):
+    import tyjokr_a11y_event_goals as goals
+    return goals.open_goals(situation_id)
 
 
 def end_event(situation_id, send_home, end):
@@ -670,42 +693,97 @@ def build_actions():
     return _window('build actions', 'build actions instructions', rows)
 
 
+def _rows(actions):
+    return [(menu._raw(lang.t(label)), None, callback) for label, callback in actions]
+
+
+def _group(title, actions):
+    def open_group():
+        return _window(title, 'accessibility menu instructions',
+                       _rows(actions + (('back to accessibility menu', open_hub),)))
+    return title, open_group
+
+
+def _nearby_objects():
+    import tyjokr_a11y_scanner as scanner
+    if scanner.enabled():
+        return menu._show_scanner_window(group=scanner.OBJECTS)
+    _say('enable the scanner first')
+    return False
+
+
+def _travel():
+    import services
+    import tyjokr_a11y_travel as travel
+    sim = services.get_active_sim()
+    if sim is None or sim.zone_id != services.current_zone_id():
+        _say('sim unavailable')
+        return False
+    if travel.enabled() and travel.simplified():
+        if travel._show_front(sim):
+            return True
+    else:
+        result = travel._push_travel(sim)
+        if result == 'ok':
+            return True
+        travel._say_refusal(result, sim)
+        return False
+    _say('action unavailable')
+    return False
+
+
 def open_hub():
     import tyjokr_a11y_phone as phone
     import tyjokr_a11y_build as build
     import tyjokr_a11y_grid as grid
-    rows = []
-    for label, message in PANELS:
-        rows.append((menu._raw(lang.t(label)), None,
-                     lambda value=message: _ui(value)))
-    # Build controls off: no dead rows; the settings menu row turns them on.
-    # One row: object placement in Build mode, the read-only grid in Live.
-    # The pixel cursor and its actions window stay on a11y.build/a11y.buildmenu.
     import tyjokr_a11y_place as place
-    if not build.controls_enabled():
-        build_rows = ()
-    elif place.in_build_mode():
-        build_rows = (('build placement', grid.placement_toggle),)
-    else:
-        build_rows = (('read-only lot grid', grid.toggle),)
-    # Pack Simology readers: only for the packs this game has installed.
+
     import tyjokr_a11y_simology as simology
-    pack_rows = ((('milestones', simology.milestones_window),) if simology.milestones_available() else ()) + \
-                ((('character values', simology.values_window),) if simology.values_available() else ())
     import tyjokr_a11y_business as business
-    for label, callback in (
-            (('action queue', action_queue), ('events', events_window), ('businesses', business.businesses_window)) +
-            pack_rows +
-            (('self interactions', self_interactions),
-             ('household sims', household), ('household funds', funds),
-             ('day and time', read_clock),
-             ('known contacts', contacts.open_contacts)) + build_rows +
-            (('waiting call or text', phone.open_waiting),) +
-            ((('phone', phone.open_list),) if phone.simplified() else ()) +
-            (('keyboard shortcuts', scanner_help),
-             ('settings menu', menu._show_settings_window))):
-        rows.append((menu._raw(lang.t(label)), None, callback))
-    return _window('accessibility menu', 'accessibility menu instructions', rows)
+
+    pack_rows = ()
+    if simology.milestones_available():
+        pack_rows += (('milestones', simology.milestones_window),)
+    if simology.values_available():
+        pack_rows += (('character values', simology.values_window),)
+    panels = {label: (lambda value=message: _ui(value)) for label, message in PANELS}
+    building = place.in_build_mode()
+    build_tools = ()
+    lot_tools = (('household funds', funds), ('owned businesses', panels['owned businesses']),
+                 ('businesses', business.businesses_window), ('Floor actions here', floor_interactions))
+    if build.controls_enabled():
+        if building:
+            build_tools = (('guided placement', place.guided_placement),
+                           ('build placement', grid.placement_toggle),
+                           ('undo last accessible placement', place.undo))
+        else:
+            lot_tools += (('read-only lot grid', grid.toggle),)
+    groups = (
+        _group('yourself', (('self interactions', self_interactions),
+                            ('simology', panels['simology'])) + pack_rows),
+        ('needs', panels['needs']),
+        ('mood and moodlets', panels['mood and moodlets']),
+        _group('Sims', (('household sims', household), ('away actions', away_actions),
+                        ('known contacts', contacts.open_contacts))),
+        ('nearby objects', _nearby_objects),
+        ('inventory', panels['inventory']),
+        _group('places', (('travel', _travel), ('calendar', panels['calendar']), ('events', events_window))),
+        _group('home and lot', lot_tools),
+        ('skills', panels['skills']),
+        _group('wishes and aspirations', (('wants and fears', panels['wants and fears']),
+                                          ('aspirations', panels['aspirations']))),
+        _group('relationships', (('relationships', panels['relationships']),
+                                 ('social groups', panels['social groups']))),
+        ('career', panels['career']),
+        _group('now', (('action queue', action_queue), ('day and time', read_clock))),
+    )
+    other = (('waiting call or text', phone.open_waiting),
+             ('photography controls', panels['photography controls']))
+    if phone.simplified():
+        other += (('phone', phone.open_list),)
+    other += (('keyboard shortcuts', scanner_help), ('settings menu', menu._show_settings_window))
+    return _window('accessibility menu', 'accessibility menu instructions',
+                   _rows(build_tools + groups + other))
 
 
 @sims4.commands.Command('a11y.hub', command_type=sims4.commands.CommandType.Live)

@@ -476,6 +476,43 @@ class PlacementTests(unittest.TestCase):
         self.assertTrue(self.said('free spot on a desk'))
         self.assertEqual(world.funds.money, 960)
 
+    def test_guided_purchase_tries_more_anchors_and_stays_in_the_room(self):
+        self.choose()
+        points = [Vec(3, 0, 4), Vec(7, 0, 4)]
+        area = place.LotArea(None, [], points, lambda point: 1 if point.x != 4 else 2, 1)
+        self.assertTrue(place.place(points[0], 0, 'surface', area=area))
+        self.assertEqual((world.objects, world.funds.money), ({}, 1000))
+        self.assertTrue(self.ack())
+        self.assertEqual(len(world.fgl_calls), 5)
+        self.assertEqual(next(iter(world.objects.values())).position.x, 8)
+        self.assertEqual(world.funds.money, 700)
+        self.assertFalse(self.ack())  # duplicate acknowledgement
+        self.assertTrue(place.undo())
+        self.assertEqual((world.objects, world.funds.money), ({}, 1000))
+
+    def test_guided_purchase_with_no_fit_leaves_funds_and_lot_alone(self):
+        self.choose()
+        point = Vec(3, 0, 4)
+        area = place.LotArea(None, [], [point], lambda pos: 1 if pos.x < 4 else 2, 1)
+        self.assertTrue(place.place(point, 0, 'surface', area=area))
+        self.assertFalse(self.ack())
+        self.assertEqual((world.objects, world.funds.money), ({}, 1000))
+        self.assertEqual(world.funds.calls, [])
+        self.assertTrue(self.said('could not fit in that area'))
+
+    def test_guided_surface_search_stays_in_the_selected_room(self):
+        wrong_desk = Obj(1, Definition(1, 0, name='desk'), Vec(4, 0, 4), slots=[Slot()])
+        right_desk = Obj(2, Definition(2, 0, name='desk'), Vec(8, 0, 4), slots=[Slot()])
+        world.objects.update({1: wrong_desk, 2: right_desk})
+        self.choose(502, 'Laptop')
+        point = Vec(3, 0, 4)
+        area = place.LotArea(None, [], [point], lambda pos: 2 if pos.x == 4 else 1, 1)
+        self.assertTrue(place.place(point, 0, 'surface', area=area))
+        self.assertTrue(self.ack())
+        laptop = next(obj for obj in world.objects.values() if obj.id not in (1, 2))
+        self.assertIs(laptop.parent, right_desk.slots[0])
+        self.assertEqual(world.funds.money, 960)
+
     def test_repeat_on_the_same_tile_needs_a_second_press(self):
         self.choose()
         self.request()

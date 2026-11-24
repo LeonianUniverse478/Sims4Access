@@ -73,16 +73,17 @@ class ClockTests(unittest.TestCase):
         self.assertNotEqual(lang.t('clock unavailable'), 'clock unavailable')
         self.assertNotIn('day 1', lang.t('clock unavailable').lower())
 
-    def test_the_hub_offers_day_and_time_after_household_funds(self):
+    def test_the_hub_offers_day_and_time_in_now(self):
         seen = []
         with patch.object(hub, '_window', side_effect=lambda title, text, rows: seen.append(rows)), \
                 patch.object(hub.menu, '_raw', side_effect=lambda text: text):
             hub.open_hub()
-        labels = [row[0] for row in seen[0]]
+            next(row[2] for row in seen[0] if row[0] == lang.t('now'))()
+        labels = [row[0] for row in seen[1]]
         self.assertIn(lang.t('day and time'), labels)
         self.assertEqual(labels.index(lang.t('day and time')),
-                         labels.index(lang.t('household funds')) + 1)
-        callback = seen[0][labels.index(lang.t('day and time'))][2]
+                         labels.index(lang.t('action queue')) + 1)
+        callback = seen[1][labels.index(lang.t('day and time'))][2]
         self.assertTrue(callback())
         env.drain()
         self.assertEqual(env.messages, ['A11yClock'])

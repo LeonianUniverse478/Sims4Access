@@ -61,15 +61,17 @@ class ScannerRefreshTests(unittest.TestCase):
                 patch.object(scanner, '_buy_flags', return_value=0), \
                 patch.object(scanner, '_speak_parts') as speak:
             self.assertTrue(scanner._scan())
-            self.assertEqual([x.obj_id for x in scanner._by_group['SIMS']], [1, 2])
-            self.assertEqual([x.obj_id for x in scanner._by_group['SURFACE']], [3])
-            scanner._group_index = scanner._groups.index('SURFACE')
+            self.assertEqual(scanner._groups, [scanner.YOURSELF, scanner.SIMS, scanner.OBJECTS])
+            self.assertEqual([x.obj_id for x in scanner._by_group[scanner.YOURSELF]], [1])
+            self.assertEqual([x.obj_id for x in scanner._by_group[scanner.SIMS]], [2])
+            self.assertEqual([x.obj_id for x in scanner._by_group[scanner.OBJECTS]], [3])
+            scanner._group_index = scanner._groups.index(scanner.OBJECTS)
             # A previously out-of-range object moves in closer; sorting changes.
             objects[1].distance = 2
             objects[1].position.x = 2
             scanner._last_scan -= 3
             scanner._refresh_tick()
-            self.assertEqual([x.obj_id for x in scanner._by_group['SURFACE']], [4, 3])
+            self.assertEqual([x.obj_id for x in scanner._by_group[scanner.OBJECTS]], [4, 3])
             self.assertEqual(scanner._current().obj_id, 3)
             objects.pop(0)
             scanner._last_scan -= 3

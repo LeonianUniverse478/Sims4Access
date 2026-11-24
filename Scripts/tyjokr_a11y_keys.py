@@ -19,6 +19,8 @@ import tyjokr_a11y_phone  # install the incoming-call observer at startup
 import tyjokr_a11y_hub  # register the common-actions commands
 import tyjokr_a11y_careerlog  # doctor career research log (logging only)
 import tyjokr_a11y_modui  # mod menu census (logging only)
+import tyjokr_a11y_rooms  # the a11y.roomlabel console command (Build cursor room labels)
+import tyjokr_a11y_holidays  # Seasons: announce a holiday when its day starts
 import tyjokr_a11y_plus  # TS4 Access Plus features (Alt keys), merged 2026-10-08
 
 try:
@@ -84,7 +86,13 @@ CHORDS = {
     0x4D: ('milestones', False),  # M: the active Sim's milestones (Growing Together)
     0x4B: ('values', False),      # K: the active Sim's character values (Parenthood)
     0x4F: ('catalog', False),     # O: the Buy catalog tree (Build mode)
-    0x44: ('catalogfind', False), # D: search the Buy catalog (Build mode); not N, NVDA's own key
+    0x49: ('catalogfind', False), # I: search the Buy catalog (Build mode); not N (NVDA's own key)
+    # DaRainbowGirlXX's Build cursor and scanner keys (merged 2026-11-12):
+    0x55: ('layerup', False),     # U: Build cursor target layer up (wall heights, ceiling)
+    0x44: ('layerdown', False),   # D: Build cursor target layer down
+    0x4A: ('roomlabel', False),   # J: label the room at the Build cursor (L is logging)
+    0xBC: ('scopeprev', False),   # comma: smaller scanner range
+    0xBE: ('scopenext', False),   # period: larger scanner range
     0x42: ('buildplace', False),   # B: Build placement on the lot grid
     0x54: ('gridtoggle', False),   # T: read-only lot grid
     0xDB: ('rotateleft', False),   # [ : native Build rotation
@@ -100,7 +108,8 @@ CHORDS = {
 CHORD_NAMES = {0x26: 'Up', 0x28: 'Down', 0x25: 'Left', 0x27: 'Right', 0x20: 'Space',
                0x21: 'PageUp', 0x22: 'PageDown',
                0x0D: 'Enter', 0x08: 'Backspace', 0x53: 'S', 0x57: 'W',
-               0x52: 'R', 0x48: 'H', 0x43: 'C', 0x50: 'P', 0x45: 'E', 0x47: 'G', 0x51: 'Q', 0x4C: 'L', 0x56: 'V', 0x4D: 'M', 0x4B: 'K', 0x4F: 'O', 0x44: 'D',
+               0x52: 'R', 0x48: 'H', 0x43: 'C', 0x50: 'P', 0x45: 'E', 0x47: 'G', 0x51: 'Q', 0x4C: 'L', 0x56: 'V', 0x4D: 'M', 0x4B: 'K', 0x4F: 'O', 0x49: 'I',
+               0x55: 'U', 0x44: 'D', 0x4A: 'J', 0xBC: 'comma', 0xBE: 'period',
                0x42: 'B', 0x54: 'T', 0xDB: '[', 0xDD: ']', 0x5A: 'Z', 0x59: 'Y',
                0x46: 'F', 0x58: 'X', 0x31: '1', 0x32: '2', 0x33: '3', 0x34: '4',
                0x35: '5', 0x36: '6', 0x37: '7', 0x38: '8'}
@@ -132,7 +141,8 @@ BUILD_GRID_KEYS = {0x26: 'up', 0x28: 'down', 0x25: 'left', 0x27: 'right',
                    0x21: 'floorup', 0x22: 'floordown', 0x0D: 'place', 0x20: 'repeat',
                    0x08: 'back', 0x1B: 'back', 0x52: 'turn', 0x24: 'last', 0x2E: 'sell',
                    0x31: 'info1', 0x32: 'info2', 0x33: 'info3', 0x34: 'info4',
-                   0x35: 'info5', 0x36: 'info6'}
+                   0x35: 'info5', 0x36: 'info6',
+                   0x4D: 'moveobject'}   # M: pick up an object, M again puts it down here
 _build_grid_owner = False
 _scanner_live = False        # Flash: Live mode with the setting on (camera follow)
 _scanner_suspended = False   # a menu, dialog or other mode took input meanwhile
@@ -1210,6 +1220,20 @@ def _world_chord(intent, epoch, repeat=False):
         return
     if intent == 'help':
         tyjokr_a11y_hub.open_hub()
+        return
+    if intent in ('layerup', 'layerdown', 'roomlabel'):
+        # Build cursor only; elsewhere these keys must not reach the scanner.
+        if grid.build_cursor():
+            grid.on_key(intent)
+        else:
+            speech.speak('Turn on the Build cursor with Control Alt B first.', explicit=True)
+        return
+    if intent in ('scopeprev', 'scopenext'):
+        import tyjokr_a11y_scanner as scanner
+        if not settings.get('scanner', True):
+            speech.speak('Scanner is off.', explicit=True)
+            return
+        scanner.cycle_range(1 if intent == 'scopenext' else -1)
         return
     if build.active() or build.aiming():
         build.on_key(intent)

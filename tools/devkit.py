@@ -86,7 +86,7 @@ def verify_ui(final, chain, compat):
     require('compat fidelity gate PASSED' in compat.read_text(encoding='utf-8-sig'), 'Compatibility gate did not pass')
     result = {}
     for builder, package, work, prefix in (
-        ('build_ui_package.py', 'tyjokr_ScreenReader_UI.package', 'work-1.128.90', 'patched_'),
+        ('build_ui_package.py', 'tyjokr_ScreenReader_UI.package', 'work-1.129.39', 'patched_'),
         ('build_compat_package.py', 'tyjokr_ScreenReader_Compatibility_UICheats.package', 'work-compat', 'compat_')):
         movies = movie_map(ROOT / 'flash' / builder)
         replacements, _ = replacement_sources(work)

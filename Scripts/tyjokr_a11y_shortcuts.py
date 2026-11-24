@@ -40,15 +40,21 @@ CHORD_LABELS = {
     'redo': 'redo in Build mode',
     'sell': 'sell the object on the grid point (press twice)',
     'buildgrid': 'aim the Build cursor at the grid point without placing',
+    'layerup': 'Build cursor: target layer up, through six wall heights to the ceiling',
+    'layerdown': 'Build cursor: target layer down, through the wall heights to the ground',
+    'roomlabel': 'Build cursor: label the room at the cursor',
+    'scopeprev': 'smaller scanner range',
+    'scopenext': 'larger scanner range',
     'scannermode': 'scanner mode on or off (saved): plain arrows browse the scanner and never move the camera; Right opens a group, Left or Backspace goes back, Enter acts, Space repeats',
 }
 # Chords that do nothing while Build controls are off.
 BUILD_INTENTS = frozenset(('buildplace', 'sell', 'gridtoggle', 'rotateleft', 'rotateright',
-                           'undo', 'redo', 'buildgrid'))
+                           'undo', 'redo', 'buildgrid', 'layerup', 'layerdown', 'roomlabel'))
 EXTRA_LABELS = {'A11yRepeat': 'read again or stop', 'A11yDismiss': 'back or close'}
 KEY_LABELS = {0x08: 'Backspace', 0x09: 'Tab', 0x0D: 'Enter', 0x1B: 'Escape',
               0x20: 'Space', 0x21: 'Page Up', 0x22: 'Page Down',
-              0xDB: 'left bracket', 0xDD: 'right bracket', 0x6E: 'Numpad decimal'}
+              0xDB: 'left bracket', 0xDD: 'right bracket', 0x6E: 'Numpad decimal',
+              0xBC: 'comma', 0xBE: 'period'}
 
 
 def key_name(vk, keyboard):

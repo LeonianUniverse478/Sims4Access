@@ -7,7 +7,7 @@ them from their own installs instead:
     Dev.ps1 setup                                   EA's movies, from TS4_INSTALL
     Dev.ps1 setup --uicheats <UI_Cheats_Extension.package>   and UI Cheats' movies
 
-The results go where the kit expects them (flash/work-1.128.90/gfx and
+The results go where the kit expects them (flash/work-1.129.39/gfx and
 flash/uicheats-base), and every pinned input in reference/toolchain.json is
 then checked by hash, as Dev.ps1 doctor does. Nothing here changes a hash or a
 build gate: inputs from another game or UI Cheats version are reported, not
@@ -23,7 +23,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-WORK = ROOT / 'flash/work-1.128.90'
+WORK = ROOT / 'flash/work-1.129.39'
 UIC = ROOT / 'flash/uicheats-base'
 
 

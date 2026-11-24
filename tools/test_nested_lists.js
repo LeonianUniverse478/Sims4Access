@@ -23,6 +23,7 @@ DisplayObjectContainer.prototype.contains = function(item) {
   return false;
 };
 const runtime = {DisplayObject, DisplayObjectContainer, int: Math.trunc,
+  getQualifiedClassName: value => value.kind || value.name,
   asCast: (value, Type) => value instanceof Type ? value : null};
 
 function method(name) {
@@ -143,6 +144,62 @@ test('a plain list still steps by data index', () => {
   const ui = manager(scope, cells);
   assert.deepStrictEqual(walk(ui, cells[0], [1, 1]), ['r2', 'r3']);
   assert.deepStrictEqual(ui.requests, [['only', 1, 1], ['only', 2, 1]]);
+});
+
+test('Needs walks out of temperament grids to ordinary needs and the powers button', () => {
+  const scope = new DisplayObjectContainer('Needs');
+  scope.kind = 'widgets.Gameplay.SimInfoHUD.MotivePanel::SimInfoMotivePanelMain';
+  const fury = scope.add(new DisplayObject('Fury'));
+  const traits = list('temperaments', scope);
+  traits.add(new DisplayObject('empty slot 1')); traits.add(new DisplayObject('empty slot 2'));
+  const a = traits.add(new DisplayObject('Must Be Clean'));
+  const b = traits.add(new DisplayObject('Wracked With Guilt'));
+  const needs = ['Hunger', 'Bladder', 'Energy', 'Fun', 'Social', 'Hygiene'].map(n => scope.add(new DisplayObject(n)));
+  const rank = scope.add(new DisplayObject('Rank and points'));
+  const powers = scope.add(new DisplayObject('Powers'));
+  const collected = [fury, a, b, ...needs, rank, powers], ui = manager(scope, collected);
+  ui.A11yFindScrollList = method('A11yFindScrollList').bind(ui);
+  assert.deepStrictEqual(walk(ui, fury, Array(collected.length).fill(1)), [...collected.slice(1), fury].map(x => x.name));
+  assert.deepStrictEqual(walk(ui, fury, Array(collected.length).fill(-1)), [...collected.slice(1).reverse(), fury].map(x => x.name));
+  assert.deepStrictEqual(ui.requests, [], 'Fully instantiated needs controls must not be re-entered by data index');
+});
+
+test('Simology crosses Traits to later sections and back without re-entering the one-cell wrapper', () => {
+  const scope = new DisplayObjectContainer('Simology');
+  scope.kind = 'widgets.Gameplay.SimInfoHUD.SummaryPanel::SimInfoSummaryPanelMain';
+  const family = scope.add(new DisplayObject('Family tree')), stats = scope.add(new DisplayObject('Stats'));
+  const outer = list('Simology content', scope), content = outer.add(new DisplayObjectContainer('SummaryPanelContent'));
+  const header = content.add(new DisplayObject('Traits'));
+  const grid = list('Traits grid', content), traits = Array.from({length: 6}, (_, i) => grid.add(new DisplayObject('Trait ' + i)));
+  const later = ['Preferences', 'Identity', 'Relationship preferences', 'Milestones', 'Lifestyles', 'Fame'].map(n => content.add(new DisplayObject(n)));
+  const collected = [family, stats, header, ...traits, ...later], ui = manager(scope, collected);
+  ui.A11yFindScrollList = method('A11yFindScrollList').bind(ui);
+  assert.deepStrictEqual(walk(ui, family, Array(collected.length).fill(1)), [...collected.slice(1), family].map(x => x.name));
+  assert.deepStrictEqual(walk(ui, family, Array(collected.length).fill(-1)), [...collected.slice(1).reverse(), family].map(x => x.name));
+  assert.deepStrictEqual(ui.requests, []);
+});
+
+test('Picker opened above an info panel retains indexed list navigation', () => {
+  const scope = new DisplayObjectContainer('PickersMain'), grid = list('book cart', scope);
+  const a = grid.add(new DisplayObject('Book 1')), b = grid.add(new DisplayObject('Book 2'));
+  const ui = manager(scope, [a,b]); ui.A11yFindScrollList = method('A11yFindScrollList').bind(ui);
+  assert.deepStrictEqual(walk(ui, a, [1]), ['Book 2']);
+  assert.deepStrictEqual(ui.requests, [['book cart', 1, 1]]);
+});
+
+test('Aspirations leaves the unfinished-business goals for the next section and Rewards', () => {
+  const scope = new DisplayObjectContainer('Aspirations');
+  scope.kind = 'widgets.Gameplay.SimInfoHUD.AspirationPanel::SimInfoAspirationPanelMain';
+  const outer = list('Aspiration content', scope), content = outer.add(new DisplayObjectContainer('AspirationPanelContent'));
+  const journey = content.add(new DisplayObject('Soul journey'));
+  const goalsGrid = list('Unfinished goals', content), goals = Array.from({length:4}, (_,i) => goalsGrid.add(new DisplayObject('Goal '+i)));
+  const aspiration = content.add(new DisplayObject('Primary aspiration')), select = content.add(new DisplayObject('Select aspiration'));
+  const rewards = scope.add(new DisplayObject('Rewards'));
+  const collected = [journey, ...goals, aspiration, select, rewards], ui=manager(scope,collected);
+  ui.A11yFindScrollList = method('A11yFindScrollList').bind(ui);
+  assert.deepStrictEqual(walk(ui,journey,Array(collected.length).fill(1)), [...collected.slice(1),journey].map(x=>x.name));
+  assert.deepStrictEqual(walk(ui,journey,Array(collected.length).fill(-1)), [...collected.slice(1).reverse(),journey].map(x=>x.name));
+  assert.deepStrictEqual(ui.requests, []);
 });
 
 console.log(checks + ' nested list checks passed (not in-game verification).');

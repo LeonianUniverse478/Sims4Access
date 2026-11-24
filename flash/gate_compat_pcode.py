@@ -15,8 +15,9 @@ import gate_pcode as gate
 
 def main():
     work = Path(sys.argv[1]).resolve()
-    base = Path(__file__).resolve().parent / 'uicheats-base'
-    source = (base.parent / 'build_uicheats_compat.ps1').read_text(encoding='utf-8')
+    flash = Path(__file__).resolve().parent
+    base = Path(os.environ.get('TS4_UICHEATS_BASE', str(flash / 'uicheats-base'))).resolve()
+    source = (flash / 'build_uicheats_compat.ps1').read_text(encoding='utf-8')
     block = re.search(r'\$movies\s*=\s*\[ordered\]\s*@\{(.*?)\n\}', source, re.S).group(1)
     targets = {}
     for line in block.splitlines():
@@ -28,7 +29,7 @@ def main():
     failed = []
     compared = 0
     # FFDec's configuration stays in the same writable folder as chain.ps1.
-    os.environ['APPDATA'] = str(base.parent.parent / 'build' / 'ffdec-appdata')
+    os.environ['APPDATA'] = str(flash.parent / 'build' / 'ffdec-appdata')
     # Keep exports for review. This unique directory is never reused.
     compare_only = len(sys.argv) > 2
     if compare_only:

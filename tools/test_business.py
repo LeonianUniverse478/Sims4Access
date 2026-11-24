@@ -69,8 +69,9 @@ class BusinessTests(unittest.TestCase):
 
     def test_menu_row(self):
         hub.open_hub()
+        next(row[2] for row in self.windows[-1][1] if row[0] == lang.t('home and lot'))()
         labels = [row[0] for row in self.windows[-1][1]]
-        self.assertEqual(labels.index(lang.t('events')) + 1, labels.index(lang.t('businesses')))
+        self.assertIn(lang.t('businesses'), labels)
 
     def test_each_business_reads_the_panel_figures(self):
         self.assertTrue(business.businesses_window())

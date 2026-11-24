@@ -60,6 +60,25 @@ ROWS = [
         help='plain arrows browse the scanner and never move the camera; Control Alt Space toggles'),
     Row('build_controls', 'bool', 'build controls',
         help='place Build catalog objects from the lot grid in Build mode with Control Alt B; read-only lot grid in Live mode'),
+    Row('scanner_range', 'choice', 'scanner range', choices=('6 meters', '12 meters', '24 meters', '40 meters',
+                                                               'whole lot', 'this floor', 'this room'),
+        help='how far the scanner looks; Control Alt comma and Control Alt period change it'),
+    Row('surface_layer_focus', 'bool', 'layer focus',
+        help='Build cursor: Control Alt U and D choose a layer; number 1 focuses objects on it, number 4 names nearby layers'),
+    Row('chair_snapping', 'bool', 'experimental chair snapping',
+        help='dining and desk chairs: face a nearby table or focus it with 1; the game validates its native seat slot'),
+    Row('experimental_basement', 'bool', 'experimental basement creation',
+        help='Build helper basements use the native Basement Tool from ground level and verify the result below'),
+    Row('chair_alignment_hints', 'bool', 'chair-to-table orientation hints',
+        help='for dining and desk chairs, names the nearest table or desk and facing relation'),
+    Row('experimental_bare_ground', 'bool', 'experimental bare-ground placement',
+        help='Build cursor: needs natural ground; the game still checks the spot'),
+    Row('experimental_water', 'bool', 'experimental water placement',
+        help='Build cursor: needs detected water; the game still checks the spot'),
+    Row('experimental_ceiling', 'bool', 'experimental ceiling placement',
+        help='Build cursor: uses a sampled ceiling point; the game still checks the spot'),
+    Row('experimental_fence', 'bool', 'experimental fence placement',
+        help='Build cursor: uses the edge you face; the game still checks the spot'),
     Row('logging', 'bool', 'logging',
         help='diagnostic log next to the ts4script'),
     Row('sapi_rate', 'number', 'voice rate', lo=-10, hi=10, step=1,
@@ -213,6 +232,10 @@ def _apply(row, value):
         speech.restart_sapi()
     elif key == 'tooltip_delay':
         settings.set(key, float(value))
+    elif key == 'scanner_range':
+        settings.set(key, value)
+        import tyjokr_a11y_scanner as scanner
+        scanner.apply_range_setting()
     else:
         settings.set(key, bool(value) if row.kind == 'bool' else value)
 
@@ -460,7 +483,7 @@ def _on_settings_pick(dialog):
     _show_settings_window()
 
 
-def _show_scanner_window():
+def _show_scanner_window(group=None):
     """Simulation thread. What the scanner sees, one row per thing."""
     global _scan_visual_id
     _cancel_dialog(_scan_visual_id)
@@ -473,6 +496,11 @@ def _show_scanner_window():
             _say(lang.t('nothing nearby'))
             return False
         groups, current_group, current_entry = scanner.snapshot()
+        if group is not None:
+            groups = [(key, entries) for key, entries in groups if key == group]
+        if not groups:
+            _say(lang.t('nothing nearby'))
+            return False
         total = sum(len(entries) for _key, entries in groups)
         dialog = _picker(
             'Scanner',
@@ -484,8 +512,9 @@ def _show_scanner_window():
         option = 0
         for group_key, entries in groups:
             subs = scanner.subs_in(entries)
+            label = scanner.GROUP_TERMS.get(group_key)
             dialog.add_row(ObjectPickerRow(
-                option_id=option, name=_ls_hash(scanner.label_hash(group_key)),
+                option_id=option, name=_raw(lang.t(label)) if label else _ls_hash(scanner.label_hash(group_key)),
                 row_description=_raw('{} items, {} subcategories{}'.format(
                     len(entries), len(subs), '  (current)' if group_key == current_group else '')),
                 row_tooltip=None, icon=None, tag=('group', group_key)))

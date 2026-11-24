@@ -2,7 +2,7 @@
 # Usage: powershell -ExecutionPolicy Bypass -File flash\chain.ps1 [-Tag name]
 # Writes flash\chain-<tag>.log and ends with CHAIN DONE or CHAIN FAILED.
 # Never run two of these at once (the gate exports pcode into the work dir).
-param([string]$Tag = "run", [switch]$SkipRebuild, [string]$Work = "work-1.128.90")
+param([string]$Tag = "run", [switch]$SkipRebuild, [string]$Work = "work-1.129.39")
 $ErrorActionPreference = 'Continue'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = Split-Path -Parent $here
