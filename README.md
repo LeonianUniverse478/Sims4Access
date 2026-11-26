@@ -67,6 +67,8 @@ Download **TS4_Access_Update.zip** from the latest release, then:
   moving furniture, wall and room reading, target layers, room labels, and
   hanging wall objects (test feature).
 - **Holiday announcements** (Seasons), with each tradition and what to do.
+- **Festivals** (Ctrl+Alt+A): what's on and when, each festival's activities,
+  and travel there.
 - **Guided placement** and a grouped Accessibility menu with a simpler Live
   scanner (Yourself, Sims, Objects).
 - **House building, roofs, basements and many more readable screens** by

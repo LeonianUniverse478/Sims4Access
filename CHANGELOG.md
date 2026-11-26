@@ -9,6 +9,28 @@ Install or update with TS4AccessUpdater.exe from the
 
 ---
 
+## build-2026-11-25_214753 (2026-11-25)
+
+### Festivals
+
+- **Ctrl+Alt+A** (also Places in the Accessibility menu) lists the festivals
+  coming up and running now, with when each one is on.
+- Enter on a festival opens it. The first row takes your Sim there, or says
+  why not: it hasn't started yet, you're already there, or you're on
+  vacation. Then you hear when, where, and each activity with its
+  description, the same as the game's flyer.
+- The calendar's **Read flyer** button opens the same menu, instead of the
+  game's flyer, which can't be used with the keyboard.
+
+### Scanner
+
+- **Fix:** with the scanner range on whole lot, this floor or this room, the
+  scanner listed no Sims, not even your own, when you were away from the
+  lot, for example at a festival or in a park. Your own Sim is now always
+  listed. Away from the active lot, those ranges use 40 metres.
+
+---
+
 ## build-2026-11-24_082056 (2026-11-24)
 
 Seven contributions by **Ar-Anaviel**, merged from pull requests 3 to 9.

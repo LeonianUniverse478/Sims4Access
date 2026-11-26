@@ -165,6 +165,8 @@ choose one first. Use the arrows to read its native goals and Escape to leave.
 This replaces the game's video-recording shortcut while keyboard navigation owns it.
 Ctrl+Alt+V: Running events. Enter on one to read its current goals, send all
 guests home and end it, end it, or send all guests home. Your household is never sent away.
+Ctrl+Alt+A: Festivals coming up and on now. Enter on one to travel there or
+read when, where and what's on.
 Ctrl+Alt+M: Milestones of the active Sim (Growing Together). Enter on a
 category reads its milestones.
 Ctrl+Alt+K: Character values of the active Sim (Parenthood).
@@ -187,6 +189,11 @@ comes. Uses destination lists when Travel list is enabled.
 The accessibility menu also opens panels such as skills, career,
 inventory, relationships and calendar. It includes self interactions,
 the action queue, events, day and time, household Sims and funds, known contacts and settings.
+Festivals (Ctrl+Alt+A, or Places in the Accessibility menu) lists the festivals coming up and
+running now, with when each is on. Enter on one opens it: the first row
+travels there (or says why not: not started yet, already there, or on
+vacation), then when, where and each activity with its description. The
+calendar's Read flyer button opens the same menu.
 With Growing Together installed, Milestones (also Ctrl+Alt+M) lists the active Sim's milestone
 categories; Enter on one reads each milestone, whether and at what age it
 was reached, and the game's text or hint. With Parenthood installed,
@@ -341,7 +348,9 @@ BUILD CURSOR AND SCANNER EXTRAS (BY DARAINBOWGIRLXX)
 
 Scanner range: Ctrl+Alt+comma and Ctrl+Alt+period step through 6, 12, 24 and 40
 metres, the whole lot, this floor and this room. Metre ranges always keep
-every Sim; lot, floor and room ranges limit Sims and objects alike. The
+every Sim; lot, floor and room ranges limit Sims and objects alike. Your
+own Sim is always listed. Away from the active lot, such as on a festival
+street or in a park, the lot, floor and room ranges use 40 metres. The
 range is remembered (Settings: scanner range).
 
 With the Build cursor on (Ctrl+Alt+B):
