@@ -618,8 +618,23 @@ def _range():
     return next((mode for mode in RANGES if mode[0] == wanted), RANGES[3])
 
 
+# Set by each scan: the active Sim is not on the active lot (an open street,
+# a festival, a park). Leo, 2026-11-25: with the whole lot range at a
+# festival the scanner listed no Sims, not even the active one.
+_off_lot = False
+
+
+def _effective_range():
+    """The range a scan uses: away from the active lot, the lot, floor and
+    room ranges would drop everything, so the 40 metre range stands in."""
+    mode = _range()
+    if mode[1] is None and _off_lot:
+        return RANGES[3]
+    return mode
+
+
 def _range_limit():
-    limit = _range()[1]
+    limit = _effective_range()[1]
     return limit if limit is not None else 1000000.0
 
 
@@ -655,7 +670,7 @@ def _room_id(obj):
 
 
 def _in_range(entry, active_room):
-    _name, limit, kind = _range()
+    _name, limit, kind = _effective_range()
     if limit is not None:
         return bool(getattr(entry, 'is_sim', False)) or entry.distance <= limit
     obj = _object_for_entry(entry)
@@ -675,16 +690,18 @@ def _in_range(entry, active_room):
 def _apply_range():
     """Filter the fresh lists to the chosen range, inside _scan, so the
     scanner's own focus restore runs on the filtered lists."""
-    if _range()[1] is not None:
+    if _effective_range()[1] is not None:
         return      # metre ranges were applied while collecting
     active_room = None
-    if _range()[2] == 'room':
+    if _effective_range()[2] == 'room':
         try:
             import services
             active_room = _room_id(services.get_active_sim())
         except Exception:
             active_room = None
     for key in list(_by_group):
+        if key == YOURSELF:
+            continue    # the active Sim is always listed
         kept = [entry for entry in _by_group[key] if _in_range(entry, active_room)]
         if kept:
             _by_group[key] = kept
@@ -709,6 +726,8 @@ def cycle_range(delta):
         return False
     found = _scan(preserve=True)
     parts = ['Scanner range: {}. '.format(name)]
+    if _effective_range()[0] != name:
+        parts.append('Away from the lot, so 40 meters is used. ')
     parts.extend(_tree_parts() if found else ['Nothing in this range. '])
     _speak_parts(parts)
     return True
@@ -728,7 +747,7 @@ def _scan(preserve=False):
     """Rebuild the lists around the active Sim. Simulation thread only."""
     global _by_group, _groups, _group_index, _item_index, _origin_level
     global _last_scan, _last_origin, _last_summary
-    global _availability_revision
+    global _availability_revision, _off_lot
     import services
     started = time.perf_counter()
     previous = _current() if preserve else None
@@ -745,6 +764,7 @@ def _scan(preserve=False):
         availability.reset()
         return False
     _bind_availability_client()
+    _off_lot = not _on_active_lot(sim)
     origin = sim.position
     _last_scan = time.monotonic()
     _last_origin = (sim.id, float(origin.x), float(origin.z))

@@ -26,6 +26,7 @@ CHORD_LABELS = {
     'wants': 'read wants and fears',
     'logging': 'turn diagnostic logging on or off (TS4_Access.log next to the mod)',
     'events': 'running events: end one, or send all its guests home',
+    'festivals': 'festivals coming up and on now: read one, or travel there',
     'catalog': 'in Build mode, the catalog by room or function, then items to pick up',
     'catalogfind': 'in Build mode, search the catalog by a word',
     'milestones': "the active Sim's milestones by category (Growing Together)",

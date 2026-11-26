@@ -864,6 +864,7 @@ def open_hub():
 
     import tyjokr_a11y_simology as simology
     import tyjokr_a11y_business as business
+    import tyjokr_a11y_festivals as festivals
 
     pack_rows = ()
     if simology.milestones_available():
@@ -891,7 +892,8 @@ def open_hub():
                         ('known contacts', contacts.open_contacts))),
         ('nearby objects', _nearby_objects),
         ('inventory', panels['inventory']),
-        _group('places', (('travel', _travel), ('calendar', panels['calendar']), ('events', events_window))),
+        _group('places', (('travel', _travel), ('calendar', panels['calendar']), ('events', events_window),
+                           ('festivals', festivals.open_festivals))),
         _group('home and lot', lot_tools),
         ('skills', panels['skills']),
         _group('wishes and aspirations', (('wants and fears', panels['wants and fears']),

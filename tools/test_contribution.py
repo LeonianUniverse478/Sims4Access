@@ -108,6 +108,22 @@ class MergedTests(unittest.TestCase):
         with patch.object(settings, 'get', side_effect=lambda k, d=None: 'whole lot' if k == 'scanner_range' else d):
             self.assertGreater(scanner._range_limit(), 1000)
 
+    def test_lot_ranges_away_from_the_lot(self):
+        """Leo, 2026-11-25: at a festival (an open street) the whole lot range
+        listed no Sims, not even the active one. Away from the active lot the
+        lot, floor and room ranges use 40 metres; Yourself is always kept."""
+        entry = lambda d, sim: types.SimpleNamespace(distance=d, is_sim=sim, level_delta=0, obj_id=1)
+        lot = lambda k, d=None: 'whole lot' if k == 'scanner_range' else d
+        with patch.object(settings, 'get', side_effect=lot), patch.object(scanner, '_off_lot', True):
+            self.assertEqual(scanner._range_limit(), 40.0)
+            self.assertTrue(scanner._in_range(entry(90, True), None), 'every Sim is listed')
+            self.assertTrue(scanner._in_range(entry(30, False), None))
+            self.assertFalse(scanner._in_range(entry(50, False), None))
+        me, other, far = entry(0, True), entry(10, True), entry(900, False)
+        with patch.object(settings, 'get', side_effect=lot), patch.object(scanner, '_off_lot', False),                 patch.object(scanner, '_object_for_entry', return_value=object()),                 patch.object(scanner, '_on_active_lot', return_value=False),                 patch.object(scanner, '_by_group', {scanner.YOURSELF: [me], scanner.SIMS: [other], scanner.OBJECTS: [far]}):
+            scanner._apply_range()
+            self.assertEqual(scanner._by_group, {scanner.YOURSELF: [me]}, 'on the lot range, the active Sim stays')
+
     def _walls(self, room, label=None):
         frame = types.SimpleNamespace()
         with patch.object(tiles, 'walls', return_value={0: 'wall', 1: 'open', 2: 'open', 3: 'edge'}), \

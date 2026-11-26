@@ -21,6 +21,7 @@ import tyjokr_a11y_careerlog  # doctor career research log (logging only)
 import tyjokr_a11y_modui  # mod menu census (logging only)
 import tyjokr_a11y_rooms  # the a11y.roomlabel console command (Build cursor room labels)
 import tyjokr_a11y_holidays  # Seasons: announce a holiday when its day starts
+import tyjokr_a11y_festivals  # festivals menu; Read flyer opens it
 import tyjokr_a11y_plus  # TS4 Access Plus features (Alt keys), merged 2026-10-08
 
 try:
@@ -83,6 +84,7 @@ CHORDS = {
     0x51: ('queue', False),    # Q: the active Sim's action queue
     0x4C: ('logging', False),  # L: diagnostic logging on or off
     0x56: ('events', False),   # V: running events (end them, send guests home)
+    0x41: ('festivals', False),   # A: festivals, with travel (Leo, 2026-11-25)
     0x4D: ('milestones', False),  # M: the active Sim's milestones (Growing Together)
     0x4B: ('values', False),      # K: the active Sim's character values (Parenthood)
     0x4F: ('catalog', False),     # O: the Buy catalog tree (Build mode)
@@ -108,7 +110,7 @@ CHORDS = {
 CHORD_NAMES = {0x26: 'Up', 0x28: 'Down', 0x25: 'Left', 0x27: 'Right', 0x20: 'Space',
                0x21: 'PageUp', 0x22: 'PageDown',
                0x0D: 'Enter', 0x08: 'Backspace', 0x53: 'S', 0x57: 'W',
-               0x52: 'R', 0x48: 'H', 0x43: 'C', 0x50: 'P', 0x45: 'E', 0x47: 'G', 0x51: 'Q', 0x4C: 'L', 0x56: 'V', 0x4D: 'M', 0x4B: 'K', 0x4F: 'O', 0x49: 'I',
+               0x52: 'R', 0x48: 'H', 0x43: 'C', 0x50: 'P', 0x45: 'E', 0x47: 'G', 0x51: 'Q', 0x4C: 'L', 0x56: 'V', 0x41: 'A', 0x4D: 'M', 0x4B: 'K', 0x4F: 'O', 0x49: 'I',
                0x55: 'U', 0x44: 'D', 0x4A: 'J', 0xBC: 'comma', 0xBE: 'period',
                0x42: 'B', 0x54: 'T', 0xDB: '[', 0xDD: ']', 0x5A: 'Z', 0x59: 'Y',
                0x46: 'F', 0x58: 'X', 0x31: '1', 0x32: '2', 0x33: '3', 0x34: '4',
@@ -1055,6 +1057,15 @@ def _chord(intent):
             if not pump.post(_open_events, _input_epoch):
                 speech.speak(lang.t('no lot loaded'), explicit=True)
             return
+        if intent == 'festivals':
+            # A native picker, like events.
+            if _modal_active:
+                speech.speak(lang.t('close the dialog first'), explicit=True)
+                return
+            import tyjokr_a11y_pump as pump
+            if not pump.post(_open_festivals, _input_epoch):
+                speech.speak(lang.t('no lot loaded'), explicit=True)
+            return
         if intent == 'queue':
             # A native picker, like the accessibility menu: never over a
             # dialog, picker or focused panel, and never while typing.
@@ -1150,6 +1161,15 @@ def _open_events(epoch):
         return False
     import tyjokr_a11y_hub as hub
     return hub.events_window()
+
+
+def _open_festivals(epoch):
+    """Simulation thread; ownership re-checked as for events."""
+    if epoch != _input_epoch or _editing_active or _modal_active:
+        _log_route('dropped: owner changed before the pump turn', 'festivals')
+        return False
+    import tyjokr_a11y_festivals as festivals
+    return festivals.open_festivals()
 
 
 def _open_queue(epoch):

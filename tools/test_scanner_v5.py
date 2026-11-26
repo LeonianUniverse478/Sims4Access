@@ -213,7 +213,8 @@ class RegressionTests(unittest.TestCase):
              0x56,                                               # Ctrl+Alt+V events (2026-09-30)
              0x4D, 0x4B,                                         # Ctrl+Alt+M milestones, K character values (2026-10-04)
              0x4F, 0x49,                                         # Ctrl+Alt+O catalog tree, I catalog search (2026-10-14; moved off D 2026-10-16)
-             0x55, 0x44, 0x4A, 0xBC, 0xBE})                      # U/D layers, J room label, comma/period scanner range (DaRainbowGirlXX, merged 2026-11-12)
+             0x55, 0x44, 0x4A, 0xBC, 0xBE,                       # U/D layers, J room label, comma/period scanner range (DaRainbowGirlXX, merged 2026-11-12)
+                          0x41})                                              # A: festivals (2026-11-25)
         with patch.object(menu, '_show_settings_window') as show:
             zone.Zone().on_loading_screen_animation_finished()
             show.assert_not_called()

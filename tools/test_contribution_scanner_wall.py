@@ -16,7 +16,7 @@ def entry(ident, category='chairs', distance=8, sim=False, level=0):
                                  is_sim=sim, level_delta=level)
 
 scope = ['6 meters', 6, 'distance']
-ns = {'_range': lambda: scope, '_object_for_entry': lambda e: objects.get(e.obj_id),
+ns = {'_range': lambda: scope, '_effective_range': lambda: scope, '_object_for_entry': lambda e: objects.get(e.obj_id),
       '_on_active_lot': lambda o: o.on_lot, '_room_id': lambda o: o.room}
 functions('tyjokr_a11y_scanner.py', {'_in_range'}, ns)
 assert ns['_in_range'](entry(1, distance=80, sim=True), None)
